@@ -2,6 +2,8 @@
 
 This directory is for storing launch files, which can be used to start multiple nodes and configure the ROS2 system.
 
+Once you have done everything through the installation steps, you can start to test the code 
+using the following commands.
 
 ### To start/test single node
 1. Start Realsense2 node
@@ -41,6 +43,10 @@ Open a terminal and navigate to the current folder. Then, run the following comm
 ```
 ./launch_control_station.sh
 ```
+
+<p align="center">
+$\large \color{red}{\textsf{Do not quit the arm if it's not in the sleep position!!!}}$</p>
+
 
 ## Why I cannot run the file?
 1. The .sh file is not executable
