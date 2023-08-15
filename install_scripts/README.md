@@ -24,4 +24,4 @@
 <p align="center">
 $\large \color{red}{\textsf{Remember to reboot the computer before using the robot!}}$</p>
 
-After you reboot the laptop, go to `/launch`.
+After you reboot the laptop, go to [/launch](../launch).

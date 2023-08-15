@@ -8,15 +8,15 @@
 
 ### Relavent 
 You do need to modify **some** of these files.
-- `/install_scripts`
-    - `/config`
+- [install_scripts](install_scripts)
+    - [install_scripts/config](install_scripts/config)
         - `rs_l515_launch.py` - to launch the camera
         - `tags_Standard41h12.yaml` - to define the april tags you used on the board
     - `install_Dependencies.sh` - to install ROS2/All the ROS wrappers/Dependencies
     - `install_Interbotix.sh` - to install arm related stuff
     - `install_LaunchFiles.sh` - to move the files under `/config` to where it should to be 
-- `/launch` - to store the launch files, details in `/launch/README.md`
-- `/src` - where you actually write code
+- [launch](launch) - to store the launch files, details in [here](launch/README.md)
+- [src](src) - where you actually write code
     - `camera.py` - Implements the Camera class for the RealSense camera. 
         - Functions to capture and convert frames
         - Functions to load camera calibration data
@@ -35,7 +35,7 @@ You do need to modify **some** of these files.
         - A function to read the RX200 arm config file
     - `state_machine.py` - Implements the StateMachine class
         - The state machine is the heart of the controller
-- `/config`
+- [config](config)
     - `rx200_dh.csv` - Contains the DH table for the RX200 arm
         - You will need to fill this in
     - `rx200_pox.csv` - Containes the S list and M matrix for the RX200 arm.
@@ -44,9 +44,9 @@ You do need to modify **some** of these files.
 
 ### Irrelavent
 Not need to touch these files.
-- `/media` - where we store media that used for README instructions
-- `/src/resource` - where we store the additional files used in the project
+- [media](media) - where we store media that used for README instructions
+- [src/resource](src/resource) - where we store the additional files used in the project
 
 ## How to start?
-1. Go to `/install_scripts` and following the `README.md` instructions
-2. Go to `/launch` to start the ROS2 nodes with the `.sh` files following the `README.md` instructions
+1. Go to [/install_scripts](install_scripts) and following the `README.md` instructions
+2. Go to [/launch](launch) to start the ROS2 nodes with the `.sh` files following the `README.md` instructions
