@@ -6,16 +6,20 @@
 ```
 ./install_Dependencies.sh
 ```
+-   Wait until it's complete before proceeding to the next step.
 
 ### 2. Install arm related stuff - [Source](https://docs.trossenrobotics.com/interbotix_xsarms_docs/ros_interface/ros2/software_setup.html)
+- Copy and run the following command:
 ```
 ./install_Interbotix.sh
 ```
 - During the installation, you'll encounter prompts. For prompts related to AprilTag and MATLAB-ROS installation, type no and press Enter.
 - ![](/media/interbotix_install.png)
+-   Wait until it's complete before proceeding to the next step.
 
 
 ### 3. Move config files
+- Copy and run the following command:
 ```
 ./install_LaunchFiles.sh
 ```
@@ -25,3 +29,8 @@
 $\large \color{red}{\textsf{Remember to reboot the computer before using the robot!}}$</p>
 
 After you reboot the laptop, go to [/launch](../launch).
+
+### Q: Why I cannot run the file above?
+A: The ".sh" file may not be executable.
+
+![](/media/chmod.png)

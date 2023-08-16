@@ -1,17 +1,41 @@
-## What is the place for?
+# What is this place for?
 
-This directory is for storing launch files, which can be used to start multiple nodes and configure the ROS2 system.
+This directory is intended for storing launch files that can initiate multiple nodes and configure the ROS2 system.
 
-Once you have done everything through the installation steps, you can start to test the code 
-using the following commands.
+After completing all installation steps, you can begin testing the code using the following commands.
 
-### To start/test single node
-1. Start Realsense2 node
+
+## To launch everything
+Open a terminal and navigate to the current folder `/launch`. Run the provided command. Remember that to halt any node, use `ctrl + C` in its respective terminal. Until you stop this node, the terminal will be occupied. If you need to run another command, open a new terminal.
+```
+./launch_armlab.sh
+```
+- This one starts all the components we need: camera, apriltag, interbotix_arm.
+
+Then in the new terminal, run the following command:
+```
+./launch_control_station.sh
+```
+- This one starts the control station GUI.
+- These two files combine multiple single-line commands that we need to start the project, making it simpler to initiate everything from a single location and with fewer open windows.
+
+<p align="center">
+$\large \color{red}{\textsf{Do not quit the arm if it's not in the sleep position!!!}}$</p>
+
+
+
+### Q: Why I cannot run the file above?
+A: The ".sh" file may not be executable.
+
+![](/media/chmod.png)
+
+## How to start a single node
+#### 1. Start Realsense2 node
 ```
 ros2 launch realsense2_camera rs_l515_launch.py
 ```
 
-2. Start AprilTag Dectection node (if needed)
+#### 2. Start AprilTag Dectection node 
 ```
 ros2 run apriltag_ros apriltag_node --ros-args \
     -r image_rect:=/camera/color/image_raw \
@@ -19,36 +43,9 @@ ros2 run apriltag_ros apriltag_node --ros-args \
     --params-file `ros2 pkg prefix apriltag_ros`/share/apriltag_ros/cfg/tags_Standard41h12.yaml
 ```
 
-3. Test the arm node
+#### 3. Start the arm node
 ```
 ros2 launch interbotix_xsarm_control xsarm_control.launch.py robot_model:=rx200
 ```
 - This command will launch rviz with the virtual robot model, the model would show exactly how the arm moving.
-
-```
-ros2 service call /rx200/torque_enable interbotix_xs_msgs/srv/TorqueEnable "{cmd_type: 'group', name: 'all', enable: false}"
-```
-- This command is used to torque off all the motors so arm can be manually manipulated. 
-
-```
-ros2 service call /rx200/torque_enable interbotix_xs_msgs/srv/TorqueEnable "{cmd_type: 'group', name: 'all', enable: true}"
-```
-- This command is used to torque on all the motors so arm can hold a pose you made
-
-### To launch everything
-Open a terminal and navigate to the current folder. Then, run the following command:
-```
-./launch_armlab.sh
-```
-```
-./launch_control_station.sh
-```
-
-<p align="center">
-$\large \color{red}{\textsf{Do not quit the arm if it's not in the sleep position!!!}}$</p>
-
-
-## Why I cannot run the file?
-1. The .sh file is not executable
-
-![](/media/chmod.png)
+- More can be learned from the official [ROS 2 Quickstart Guide](https://docs.trossenrobotics.com/interbotix_xsarms_docs/ros_interface/ros2/quickstart.html)
