@@ -17,7 +17,7 @@ Then in the new terminal, run the following command:
 ./launch_control_station.sh
 ```
 - This one starts the control station GUI.
-- To close the control station, you need to ctrl+c in the terminal, and close the window.
+- To stop the control station, you just need to close the GUI window.
 
 > Side note: These two files combine multiple single-line commands that we need to start the project, making it simpler to initiate everything from a single location and with fewer open windows.
 
