@@ -17,7 +17,9 @@ Then in the new terminal, run the following command:
 ./launch_control_station.sh
 ```
 - This one starts the control station GUI.
-- These two files combine multiple single-line commands that we need to start the project, making it simpler to initiate everything from a single location and with fewer open windows.
+- To close the control station, you need to ctrl+c in the terminal, and close the window.
+
+> Side note: These two files combine multiple single-line commands that we need to start the project, making it simpler to initiate everything from a single location and with fewer open windows.
 
 <p align="center">
 $\large \color{red}{\textsf{Do not quit the arm if it's not in the sleep position!!!}}$</p>
