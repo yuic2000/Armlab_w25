@@ -27,11 +27,22 @@ First step, we need to setup the environment:
 - This file is used to move the config files. The configurations are based on the AprilTag family we have and the specific camera model we use.
 
 ### 4. Install camera calibration package
-- Copy and run the following command:
+- Open a new terminal, then copy and run the following command:
 ```
 ./install_Calibration.sh
 ```
 
+### 5. Set up ROS_DOMAIN_ID
+- Copy and run the following command:
+```
+echo "export ROS_DOMAIN_ID=your_station_number" >> ~/.bashrc
+```
+
+- To check if you set it successfully, open a new terminal and run:
+```
+printenv | grep ROS
+```
+- where you should see the output has all the environmental variables related to ROS, and you should see `ROS_DOMAIN_ID=the_number_you_set` print out in the terminal
 
 <p align="center">
 $\large \color{red}{\textsf{Remember to reboot the computer before using the robot!}}$</p>
