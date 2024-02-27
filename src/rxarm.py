@@ -189,20 +189,12 @@ class RXArm(InterbotixManipulatorXS):
 
     def get_ee_pose(self):
         """!
-        @brief      TODO Get the EE pose.
+        @brief      TODO Get the EE pose. Distances should be in mm
 
-        @return     The EE pose as [x, y, z, phi] or as needed.
+        @return     The EE pose as [x, y, z, phi, theta, psi]
         """
-        return [0, 0, 0, 0]
+        return [0, 0, 0, 0, 0, 0]
 
-    @_ensure_initialized
-    def get_wrist_pose(self):
-        """!
-        @brief      TODO Get the wrist pose.
-
-        @return     The wrist pose as [x, y, z, phi] or as needed.
-        """
-        return [0, 0, 0, 0]
 
     def parse_pox_param_file(self):
         """!
