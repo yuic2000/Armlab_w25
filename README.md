@@ -1,4 +1,4 @@
-# armlab-f23
+# armlab-f24
 
 **Table of content**
 - [Code structure](#code-structure)
@@ -6,7 +6,7 @@
 
 ## Code structure
 
-### Relavent 
+### Relevant
 You do need to modify **some** of these files.
 - [install_scripts](install_scripts)
     - [install_scripts/config](install_scripts/config)
