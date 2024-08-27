@@ -42,7 +42,7 @@ You do need to modify **some** of these files.
         - You will need to fill this in
 
 
-### Irrelavent
+### Irrelevant
 Not need to touch these files.
 - [media](media) - where we store media that used for README instructions
 - [src/resource](src/resource) - where we store the additional files used in the project
