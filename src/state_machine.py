@@ -26,7 +26,6 @@ class StateMachine():
         self.status_message = "State: Idle"
         self.current_state = "idle"
         self.next_state = "idle"
-        self.demo_waypoints = np.zeros(shape=(0,5))
         self.waypoints = [
             [-np.pi/2,       -0.5,      -0.3,          0.0,        0.0],
             [0.75*-np.pi/2,   0.5,       0.3,     -np.pi/3,    np.pi/2],
@@ -69,12 +68,6 @@ class StateMachine():
         if self.next_state == "execute":
             self.execute()
 
-        if self.next_state == "record":
-            self.record()
-
-        if self.next_state == "replay":
-            self.replay()
-
         if self.next_state == "calibrate":
             self.calibrate()
 
@@ -116,37 +109,6 @@ class StateMachine():
               Make sure you respect estop signal
         """
         self.status_message = "State: Execute - Executing motion plan"
-        for waypoint in self.waypoints:
-            curpoint = self.rxarm.get_positions()
-            diff = 2 * np.max(np.abs(curpoint - waypoint))
-            self.rxarm.set_positions(waypoint)
-            self.rxarm.set_accel_time(diff/4)
-            self.rxarm.set_moving_time(diff)
-            time.sleep(3)
-            print("diff: ", diff)
-        self.next_state = "idle"
-
-    def record(self):
-        self.current_state = "record"
-        self.status_message = "State: Record - Recording motion waypoint"
-        self.demo_waypoints = np.vstack([self.demo_waypoints,self.rxarm.get_positions()])
-        print(self.demo_waypoints)
-        print("")
-        self.next_state = "idle"
-
-    def replay(self):
-        self.current_state = "replay"
-        self.status_message = "State: Replay - Replaying recorded motion"
-        for waypoint in self.demo_waypoints:
-            curpoint = self.rxarm.get_positions()
-            diff = 2 * np.max(np.abs(curpoint - waypoint))
-            self.rxarm.set_positions(waypoint)
-            self.rxarm.set_moving_time(diff)
-            self.rxarm.set_accel_time(diff/4)
-            time.sleep(diff)
-            print("waypoint: ", waypoint)
-            print("diff: ", diff)
-            
         self.next_state = "idle"
 
     def calibrate(self):
