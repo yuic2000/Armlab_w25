@@ -23,7 +23,6 @@ from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from resource.config_parse import parse_dh_param_file
 from sensor_msgs.msg import JointState
 import rclpy
-from rclpy.executors import SingleThreadedExecutor
 
 sys.path.append('../../interbotix_ws/src/interbotix_ros_toolboxes/interbotix_xs_toolbox/interbotix_xs_modules/interbotix_xs_modules/xs_robot') 
 from arm import InterbotixManipulatorXS
@@ -245,8 +244,7 @@ class RXArmThread(QThread):
             10
         )
         self.subscription  # prevent unused variable warning
-        self.executor = SingleThreadedExecutor()
-        self.executor.add_node(self.node)
+        rclpy.spin_once(self.node, timeout_sec=0.5)
 
     def callback(self, data):
         self.rxarm.position_fb = np.asarray(data.position)[0:5]
@@ -260,13 +258,12 @@ class RXArmThread(QThread):
             print(self.rxarm.position_fb)
 
     def run(self):
-        """ Spin the executor """
-        try:
-            while rclpy.ok():
-                self.executor.spin_once(timeout_sec=0.02)
-        finally:
-            self.node.destroy_node()
-            rclpy.shutdown()
+        """!
+        @brief      Updates the RXArm Joints at a set rate if the RXArm is initialized.
+        """
+        while True:
+            rclpy.spin_once(self.node) 
+            time.sleep(0.02)
 
 
 if __name__ == '__main__':
