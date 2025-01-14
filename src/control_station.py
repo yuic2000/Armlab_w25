@@ -93,6 +93,9 @@ class Gui(QMainWindow):
         self.ui.btnUser2.clicked.connect(lambda: self.rxarm.gripper.grasp())
         self.ui.btnUser3.setText('Execute')
         self.ui.btnUser3.clicked.connect(partial(nxt_if_arm_init, 'execute'))
+        self.ui.btnUser4.setText('Collect Pose')
+        self.ui.btnUser4.clicked.connect(partial(nxt_if_arm_init, 'record_positions'))
+        # self.ui.btnUser4.clicked.connect()
 
         # Sliders
         for sldr in self.joint_sliders:

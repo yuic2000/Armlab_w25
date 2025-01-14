@@ -115,8 +115,8 @@ class RXArm(InterbotixManipulatorXS):
         return self.initialized
 
     def sleep(self):
-        self.moving_time = 2.0
-        self.accel_time = 1.0
+        self.moving_time = 5.0
+        self.accel_time = 2.0
         self.arm.go_to_home_pose(moving_time=self.moving_time,
                              accel_time=self.accel_time,
                              blocking=True)

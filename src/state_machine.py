@@ -26,7 +26,7 @@ class StateMachine():
         self.status_message = "State: Idle"
         self.current_state = "idle"
         self.next_state = "idle"
-        self.waypoints = [
+        """ self.waypoints = [
             [-np.pi/2,       -0.5,      -0.3,          0.0,        0.0],
             [0.75*-np.pi/2,   0.5,       0.3,     -np.pi/3,    np.pi/2],
             [0.5*-np.pi/2,   -0.5,      -0.3,      np.pi/2,        0.0],
@@ -36,7 +36,14 @@ class StateMachine():
             [0.5*np.pi/2,     0.5,       0.3,     -np.pi/3,        0.0],
             [0.75*np.pi/2,   -0.5,      -0.3,          0.0,    np.pi/2],
             [np.pi/2,         0.5,       0.3,     -np.pi/3,        0.0],
-            [0.0,             0.0,       0.0,          0.0,        0.0]]
+            [0.0,             0.0,       0.0,          0.0,        0.0]] """
+        
+        self.waypoints = [
+
+        ]
+        
+        # List for storing taught waypoints
+        self.taught_waypts = []
 
     def set_next_state(self, state):
         """!
@@ -81,6 +88,9 @@ class StateMachine():
         if self.next_state == "manual":
             self.manual()
 
+        if self.next_state == "record_positions":
+            self.record_positions()
+
 
     """Functions run for each state"""
 
@@ -113,6 +123,10 @@ class StateMachine():
               Make sure you respect estop signal
         """
         self.status_message = "State: Execute - Executing motion plan"
+        for waypt in self.waypoints:
+            self.rxarm.set_positions(waypt)
+            time.sleep(3)
+
         self.next_state = "idle"
 
     def calibrate(self):
@@ -144,6 +158,25 @@ class StateMachine():
             time.sleep(5)
         self.next_state = "idle"
 
+    """
+    State for teach-and-repeat in ArmLab Task 1.3
+    """
+    def record_positions(self):
+        self.current_state = "record_positions"
+        self.status_message = "Recording positions from manual control"
+        cur_time = time.time()
+        i = 0
+
+        while (time.time() - cur_time < 80):
+            self.taught_waypts.append(self.rxarm.get_positions())
+            print(f"The Last position {self.taught_waypts[-1]} at step {i}")
+            time.sleep(5)
+            i += 1
+
+        print("Done")
+        self.waypoints = self.taught_waypts
+        self.next_state = "idle"
+
 class StateMachineThread(QThread):
     """!
     @brief      Runs the state machine
@@ -168,3 +201,38 @@ class StateMachineThread(QThread):
             self.sm.run()
             self.updateStatusMessage.emit(self.sm.status_message)
             time.sleep(0.05)
+
+
+"""
+The Last position [0.58444667 0.05982525 0.28992239 1.17809725 0.48166999]
+The Last position [0.58444667 0.22242722 0.29452431 1.07992256 0.47553405]
+The Last position [0.58751464 0.03834952 0.0966408  1.36831093 0.47400007]
+The Last position [-1.26860213  0.06902914  0.18561168  1.37598085 -1.26553416]
+The Last position [-1.26860213  0.17947575  0.36968938  1.06765068 -1.27934003]
+The Last position [-1.26860213 -0.00920388  0.08436894  1.51557302 -1.26553416]
+The Last position [-0.43411657 -0.10277671  0.41264084  1.20264101 -0.41264084]
+The Last position [-0.43565056 -0.14572819  0.41417482  1.24099052 -0.41417482]
+The Last position [-0.44792241  0.06596117  0.53689331  0.9664079  -0.41570881]
+The Last position [-0.44638842 -0.10124274  0.31139812  1.29621375 -0.42337871]
+The Last position [-0.04601942 -0.73477679  0.68568945  0.20095149  0.19788353]
+"""
+
+"""
+The Last position [-0.01227185  0.01073787  0.05829127  0.00920388  0.        ] at step 0
+The Last position [-0.01073787  0.09510681  0.06902914  0.99862152  0.        ] at step 1
+The Last position [0.57524282 0.06135923 0.28071851 1.19497108 0.43871853] at step 2
+The Last position [0.57370883 0.21015537 0.31600004 1.06918466 0.44638842] at step 3
+The Last position [0.57524282 0.00153398 0.23776703 1.32382548 0.44332045] at step 4
+The Last position [-1.28394198  0.04755341  0.25464082  1.33302939 -1.360641  ] at step 5
+The Last position [-1.27320409  0.17947575  0.41110685  1.0262332  -1.38058269] at step 6
+The Last position [-1.26860213 -0.0322136   0.27918452  1.32229149 -1.37444687] at step 7
+The Last position [-0.44332045 -0.05368933  0.38963112  1.21491277 -0.41264084] at step 8
+The Last position [-0.44945639  0.11504856  0.46786416  1.04003906 -0.41417482] at step 9
+The Last position [-0.42184472 -0.39269909  0.53075737  1.11673808 -0.44025251] at step 10
+The Last position [-0.02454369 -0.82374769  0.6948933   0.1672039  -0.04295146] at step 11
+The Last position [-0.01840777 -0.84522343  0.74704868  0.16873789 -0.04295146] at step 12
+The Last position [-0.01840777 -0.84522343  0.74704868  0.16873789 -0.04295146] at step 13
+The Last position [-0.01994175 -0.84522343  0.74704868  0.16873789 -0.04295146] at step 14
+The Last position [-0.01994175 -0.84522343  0.74704868  0.16873789 -0.04295146] at step 15
+Done
+"""
