@@ -171,9 +171,9 @@ class Camera():
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
         self.extrinsic_cali = np.array([[1, 0, 0, 0], 
-                                       [0, np.cos(-7*np.pi/180), -np.sin(-7*np.pi/180), 335], 
-                                       [0, np.sin(-7*np.pi/180), np.cos(-7*np.pi/180), 990],
-                                       [0, 0, 0, 1]])
+                                       [0, -np.cos(7*np.pi/180), -np.sin(7*np.pi/180), 335], 
+                                       [0, np.sin(7*np.pi/180), -np.cos(7*np.pi/180), 990],
+                                       [0, 0, 0, 1]])           # rotate 173 degree around x axis CCW
         
     def transformCoordinate_pixel2world(self, u, v, z):
         camera_frame = z * np.linalg.inv(self.intrisic_cali) @ np.array([u, v, 1]).reshape(3,1)
