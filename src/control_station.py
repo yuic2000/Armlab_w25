@@ -93,9 +93,12 @@ class Gui(QMainWindow):
         self.ui.btnUser2.clicked.connect(lambda: self.rxarm.gripper.grasp())
         self.ui.btnUser3.setText('Execute')
         self.ui.btnUser3.clicked.connect(partial(nxt_if_arm_init, 'execute'))
-        self.ui.btnUser4.setText('Collect Pose')
+
+        # ArmLab Checkpoint 1, Task 1.3: Implementing buttons for the arm to learn and repeat trajectories
+        self.ui.btnUser4.setText('Record')
         self.ui.btnUser4.clicked.connect(partial(nxt_if_arm_init, 'record_positions'))
-        # self.ui.btnUser4.clicked.connect()
+        self.ui.btnUser5.setText('Repeat')
+        self.ui.btnUser5.clicked.connect(partial(nxt_if_arm_init, 'repeat_positions'))
 
         # Sliders
         for sldr in self.joint_sliders:
