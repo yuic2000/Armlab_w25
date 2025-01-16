@@ -73,8 +73,8 @@ class RXArm(InterbotixManipulatorXS):
         self.initialized = False
         # Cmd
         self.position_cmd = None
-        self.moving_time = 2.0
-        self.accel_time = 0.5
+        self.moving_time = 3.0
+        self.accel_time = 1.0
         # Feedback
         self.position_fb = None
         self.velocity_fb = None
@@ -105,8 +105,8 @@ class RXArm(InterbotixManipulatorXS):
         # Reset estop and initialized
         self.estop = False
         self.enable_torque()
-        self.moving_time = 2.0
-        self.accel_time = 0.5
+        self.moving_time = 3.0
+        self.accel_time = 1.0
         self.arm.go_to_home_pose(moving_time=self.moving_time,
                              accel_time=self.accel_time,
                              blocking=False)

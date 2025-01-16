@@ -99,6 +99,10 @@ class Gui(QMainWindow):
         self.ui.btnUser4.clicked.connect(partial(nxt_if_arm_init, 'record_positions'))
         self.ui.btnUser5.setText('Repeat')
         self.ui.btnUser5.clicked.connect(partial(nxt_if_arm_init, 'repeat_positions'))
+        self.ui.btnUser6.setText('Recd Gripper Open')
+        self.ui.btnUser6.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_open'))
+        self.ui.btnUser7.setText('Recd Gripper Closed')
+        self.ui.btnUser7.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_closed'))
 
         # Sliders
         for sldr in self.joint_sliders:
