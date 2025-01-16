@@ -166,7 +166,19 @@ class Camera():
 
         @param      file  The file
         """
-        pass
+
+        self.intrisic_cali = np.array([[898.1038628, 0, 644.0920518], 
+                                      [0, 900.632657, 340.2840602], 
+                                      [0, 0, 1]])
+        self.extrinsic_cali = np.array([[1, 0, 0, 0], 
+                                       [0, np.cos(-7*np.pi/180), -np.sin(-7*np.pi/180), 335], 
+                                       [0, np.sin(-7*np.pi/180), np.cos(-7*np.pi/180), 990],
+                                       [0, 0, 0, 1]])
+        
+    def transformCoordinate_pixel2world(self, u, v, z):
+        camera_frame = z * np.linalg.inv(self.intrisic_cali) @ np.array([u, v, 1]).reshape(3,1)
+        world_frame = np.linalg.inv(self.extrinsic_cali) @ np.append(camera_frame, 1)
+        return world_frame[:-1]
 
     def blockDetector(self):
         """!
