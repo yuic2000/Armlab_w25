@@ -1,4 +1,4 @@
 media/
-src/__pycache__/
+src/__pycache__/*.pyc
 src/resource/
 
