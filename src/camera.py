@@ -39,8 +39,8 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.camera_calibrated = False
-        self.intrinsic_matrix = np.eye(3)
-        self.extrinsic_matrix = np.eye(4)
+        # self.intrinsic_matrix = np.eye(3)
+        # self.extrinsic_matrix = np.eye(4)
         self.last_click = np.array([0, 0]) # This contains the last clicked position
         self.new_click = False # This is automatically set to True whenever a click is received. Set it to False yourself after processing a click
         self.rgb_click_points = np.zeros((5, 2), int)
@@ -53,6 +53,15 @@ class Camera():
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = np.array([])
+
+        self.intrisic_matrix = np.array([[898.1038628, 0, 644.0920518], 
+                                      [0, 900.632657, 340.2840602], 
+                                      [0, 0, 1]])
+        theta = 188
+        self.extrinsic_matrix = np.array([[1, 0, 0, 10], 
+                                       [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 165], 
+                                       [0, np.sin(theta*np.pi/180), np.cos(theta*np.pi/180), 1035],
+                                       [0, 0, 0, 1]])           # rotate 172 degree along x axis CCW
 
     def processVideoFrame(self):
         """!
@@ -167,17 +176,21 @@ class Camera():
         @param      file  The file
         """
 
-        self.intrisic_cali = np.array([[898.1038628, 0, 644.0920518], 
+        self.intrisic_matrix = np.array([[898.1038628, 0, 644.0920518], 
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
-        self.extrinsic_cali = np.array([[1, 0, 0, 0], 
-                                       [0, -np.cos(7*np.pi/180), -np.sin(7*np.pi/180), 335], 
-                                       [0, np.sin(7*np.pi/180), -np.cos(7*np.pi/180), 990],
-                                       [0, 0, 0, 1]])           # rotate 173 degree around x axis CCW
+        self.extrinsic_matrix = np.array([[1, 0, 0, 0], 
+                                       [0, np.cos(173*np.pi/180), -np.sin(173*np.pi/180), 335], 
+                                       [0, np.sin(173*np.pi/180), np.cos(173*np.pi/180), 990],
+                                       [0, 0, 0, 1]])           # rotate 173 degree along x axis CCW
         
     def transformCoordinate_pixel2world(self, u, v, z):
-        camera_frame = z * np.linalg.inv(self.intrisic_cali) @ np.array([u, v, 1]).reshape(3,1)
-        world_frame = np.linalg.inv(self.extrinsic_cali) @ np.append(camera_frame, 1)
+        """
+        @brief      Transforms pixel coordinates into the world frame
+        
+        """
+        camera_frame = z * np.linalg.inv(self.intrisic_matrix) @ np.array([u, v, 1]).reshape(3,1)
+        world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
 
     def blockDetector(self):
