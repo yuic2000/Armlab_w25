@@ -59,7 +59,7 @@ class Camera():
                                       [0, 0, 1]])
         theta = 188
         self.extrinsic_matrix = np.array([[1, 0, 0, 10], 
-                                       [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 165], 
+                                       [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 155], 
                                        [0, np.sin(theta*np.pi/180), np.cos(theta*np.pi/180), 1035],
                                        [0, 0, 0, 1]])           # rotate 172 degree along x axis CCW
 
