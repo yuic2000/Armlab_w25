@@ -39,8 +39,13 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.camera_calibrated = False
-        # self.intrinsic_matrix = np.eye(3)
-        # self.extrinsic_matrix = np.eye(4)
+        # self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
+        #                               	[0, 900.1925048828125, 358.359619140625], 
+        #                             	[0, 0, 1]])
+        # self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
+        #                             0.0005230441456660628, 0.47986456751823425])
+        
+        self.extrinsic_matrix = np.eye(4)
         self.last_click = np.array([0, 0]) # This contains the last clicked position
         self.new_click = False # This is automatically set to True whenever a click is received. Set it to False yourself after processing a click
         self.rgb_click_points = np.zeros((5, 2), int)
@@ -54,9 +59,12 @@ class Camera():
         self.block_contours = np.array([])
         self.block_detections = np.array([])
 
+        # Intrinsic matrix as calibrated using the checkerboard in Checkpoint 1, Task 4
         self.intrisic_matrix = np.array([[898.1038628, 0, 644.0920518], 
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
+        
+        # Extrinsic matrix as physically measured in Checkpoint 1, Task 5
         theta = 188
         self.extrinsic_matrix = np.array([[1, 0, 0, 10], 
                                        [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 155], 
@@ -236,9 +244,66 @@ class Camera():
                     id of the tag: detection.id
         """
         modified_image = self.VideoFrame.copy()
+
         # Write your code here
+        # Include tag ID, highlight tag center, tag edges
+        for detection in msg.detections:
+
+            tag_id = detection.id
+
+            center_x = detection.centre.x
+            center_y = detection.centre.y
+            corners = detection.corners
+
+            int_corners = []
+            for corner in corners:
+              int_corner_x = int(corner.x)
+              int_corner_y = int(corner.y)
+              int_corners.append((int_corner_x, int_corner_y))
+             
+             
+            # Draw bounding box for AprilTag
+            cv2.polylines(modified_image,
+                          np.int32([int_corners]),
+                          True,
+                          (0, 0, 255), 2
+                        )
+
+            # Put text for AprilTag ID
+            cv2.putText(modified_image,
+                      f"ID: {str(tag_id)}",
+                      (int(center_x - 25), int(center_y - 50)),
+                      cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2
+                      )       
+
+            # Highlight AprilTag center
+            cv2.circle(modified_image,
+                      (int(center_x), int(center_y)),
+                      2, 
+                      (0, 255, 0), 2
+                      )
 
         self.TagImageFrame = modified_image
+        
+    # def recover_homogenous_transform_pnp(self, msg, world_points, K):
+    #     image_points_raw = []
+    #     for detection in msg.detections:
+    #         center_x = detection.centre.x
+    #         center_y = detection.centre.y
+            
+    #         image_points_raw.append((center_x, center_y))
+    #         if len(image_points_raw) == 4:
+    #             break
+            
+    #     image_points = np.int32([image_points_raw])    
+    #     [_, R_exp, t] = cv2.solvePnP(self.tag_locations,
+    #                     			image_points,
+    #                             	self.intrinsic_matrix,
+    #                              	self.distortion,
+    #                              	flags=cv2.SOLVEPNP_ITERATIVE)
+    #     R, _ = cv2.Rodrigues(R_exp)
+    #     return np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
+
 
 class ImageListener(Node):
     def __init__(self, topic, camera):
@@ -385,3 +450,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    

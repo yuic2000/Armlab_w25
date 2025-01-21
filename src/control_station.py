@@ -103,6 +103,8 @@ class Gui(QMainWindow):
         self.ui.btnUser6.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_open'))
         self.ui.btnUser7.setText('Recd Gripper Closed')
         self.ui.btnUser7.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_closed'))
+        self.ui.btnUser8.setText('Camera Calibration')
+        self.ui.btnUser8.clicked.connect(partial(nxt_if_arm_init, 'camera_calibration'))
 
         # Sliders
         for sldr in self.joint_sliders:
