@@ -44,7 +44,7 @@ class Camera():
         #                             	[0, 0, 1]])
         self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
                                     0.0005230441456660628, 0.47986456751823425])
-        
+        self.H = np.eye(3)
         self.extrinsic_matrix = np.eye(4)
         self.last_click = np.array([0, 0]) # This contains the last clicked position
         self.new_click = False # This is automatically set to True whenever a click is received. Set it to False yourself after processing a click
@@ -70,6 +70,7 @@ class Camera():
                                        [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 155], 
                                        [0, np.sin(theta*np.pi/180), np.cos(theta*np.pi/180), 1035],
                                        [0, 0, 0, 1]])           # rotate 172 degree along x axis CCW
+        self.projected_tag_locations_2d = [[390, 515], [890, 515], [890, 215], [390, 215]]
 
     def processVideoFrame(self):
         """!
@@ -111,7 +112,8 @@ class Camera():
         """
 
         try:
-            frame = cv2.resize(self.VideoFrame, (1280, 720))
+            hom_frame = cv2.warpPerspective(self.VideoFrame, self.H, (self.VideoFrame.shape[1], self.VideoFrame.shape[0]))
+            frame = cv2.resize(hom_frame, (1280, 720))
             img = QImage(frame, frame.shape[1], frame.shape[0],
                          QImage.Format_RGB888)
             return img
@@ -197,8 +199,8 @@ class Camera():
         @brief      Transforms pixel coordinates into the world frame
         
         """
-        
-        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ np.array([u, v, 1]).reshape(3,1)
+        mouse_coords = self.H @ np.array([u, v, 1]).reshape(3, 1)
+        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ mouse_coords # np.array([u, v, 1]).reshape(3, 1)
         world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
 
@@ -302,7 +304,7 @@ class Camera():
            
         # Debugging - print(image_points_raw) 
         
-        # Converting apriltag locations into 3D points by appending zeros for the z-axis
+        # Converting known apriltag grid locations into 3D points by appending zeros for the z-axis
         world_points_interm = np.array(self.tag_locations)
         world_points_3d = np.float32(np.column_stack((world_points_interm, np.zeros(4))))
         # Converting image points into int32 representations for cv2
@@ -320,7 +322,31 @@ class Camera():
                                  	flags=cv2.SOLVEPNP_ITERATIVE)
         R, _ = cv2.Rodrigues(R_exp)
         return np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
-
+    
+    def homography_transform(self, msg):
+        """ 
+        Performs the homography transformation to warp the trapezoid view of the board into a rectangular view
+        """
+        modified_image = self.VideoFrame.copy()
+        
+        image_points_raw = {}
+        for detection in msg.detections:
+            tag_id = detection.id
+            center_x = detection.centre.x
+            center_y = detection.centre.y
+            image_points_raw[tag_id] = ([center_x, center_y])
+            
+            if len(image_points_raw) == 4:
+                break
+            
+        desired_image_points = np.float32(np.array(self.projected_tag_locations_2d))
+        # Converting image points into int32 representations for cv2
+        image_points = np.float32(list(image_points_raw.values())) 
+        
+        H = cv2.findHomography(image_points, desired_image_points)[0]
+        # modified_image = cv2.warpPerspective(modified_image, H, (modified_image.shape[1], modified_image.shape[0]))
+        self.H = H
+        
 
 class ImageListener(Node):
     def __init__(self, topic, camera):
@@ -356,6 +382,7 @@ class TagDetectionListener(Node):
             self.camera.drawTagsInRGBImage(msg)
             # Checkpoint 2 Task 2.2 - Autocalibrates the extrinsic matrix based on apriltag detections
             self.camera.extrinsic_matrix = self.camera.recover_homogeneous_transform_pnp(msg)
+            self.camera.homography_transform(msg)
 
 
 class CameraInfoListener(Node):
