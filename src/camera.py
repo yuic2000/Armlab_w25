@@ -39,9 +39,9 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.camera_calibrated = False
-        self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
-                                      	[0, 900.1925048828125, 358.359619140625], 
-                                    	[0, 0, 1]])
+        # self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
+        #                               	[0, 900.1925048828125, 358.359619140625], 
+        #                             	[0, 0, 1]])
         self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
                                     0.0005230441456660628, 0.47986456751823425])
         
@@ -54,15 +54,15 @@ class Camera():
         self.grid_y_points = np.arange(-175, 525, 50)
         self.grid_points = np.array(np.meshgrid(self.grid_x_points, self.grid_y_points))
         self.tag_detections = np.array([])
-        self.tag_locations = [[-250, -25], [250, -25], [250, 275], [-250, 275]]
+        self.tag_locations = [[-250, -25], [250, -25], [250, 275], [-250, 275]]  # In order of tag id 1 thru 4
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = np.array([])
 
         # Intrinsic matrix as calibrated using the checkerboard in Checkpoint 1, Task 4
-        # self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
-        #                               [0, 900.632657, 340.2840602], 
-        #                               [0, 0, 1]])
+        self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
+                                      [0, 900.632657, 340.2840602], 
+                                      [0, 0, 1]])
         
         # Extrinsic matrix as physically measured in Checkpoint 1, Task 5
         theta = 188
@@ -197,6 +197,7 @@ class Camera():
         @brief      Transforms pixel coordinates into the world frame
         
         """
+        
         camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ np.array([u, v, 1]).reshape(3,1)
         world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
@@ -285,18 +286,34 @@ class Camera():
 
         self.TagImageFrame = modified_image
         
-    def recover_homogenous_transform_pnp(self, msg, world_points, K):
-        image_points_raw = []
+    def recover_homogeneous_transform_pnp(self, msg):
+        """
+        Returns an extrinsic matrix after performing PnP pose computation
+        """
+        image_points_raw = {}
         for detection in msg.detections:
+            tag_id = detection.id
             center_x = detection.centre.x
             center_y = detection.centre.y
+            image_points_raw[tag_id] = ([center_x, center_y])
             
-            image_points_raw.append((center_x, center_y))
             if len(image_points_raw) == 4:
                 break
-            
-        image_points = np.int32([image_points_raw])    
-        [_, R_exp, t] = cv2.solvePnP(self.tag_locations,
+           
+        # Debugging - print(image_points_raw) 
+        
+        # Converting apriltag locations into 3D points by appending zeros for the z-axis
+        world_points_interm = np.array(self.tag_locations)
+        world_points_3d = np.float32(np.column_stack((world_points_interm, np.zeros(4))))
+        # Converting image points into int32 representations for cv2
+        image_points = np.float32(list(image_points_raw.values()))    
+        
+        # Debugging
+        # print(type(world_points_3d))
+        # print(type(image_points))
+        
+        # Solving for PnP rotation and transformation
+        [_, R_exp, t] = cv2.solvePnP(world_points_3d,
                         			image_points,
                                 	self.intrinsic_matrix,
                                  	self.distortion,
@@ -337,6 +354,8 @@ class TagDetectionListener(Node):
         self.camera.tag_detections = msg
         if np.any(self.camera.VideoFrame != 0):
             self.camera.drawTagsInRGBImage(msg)
+            # Checkpoint 2 Task 2.2 - Autocalibrates the extrinsic matrix based on apriltag detections
+            self.camera.extrinsic_matrix = self.camera.recover_homogeneous_transform_pnp(msg)
 
 
 class CameraInfoListener(Node):
