@@ -39,11 +39,11 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.camera_calibrated = False
-        # self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
-        #                               	[0, 900.1925048828125, 358.359619140625], 
-        #                             	[0, 0, 1]])
-        # self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
-        #                             0.0005230441456660628, 0.47986456751823425])
+        self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
+                                      	[0, 900.1925048828125, 358.359619140625], 
+                                    	[0, 0, 1]])
+        self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
+                                    0.0005230441456660628, 0.47986456751823425])
         
         self.extrinsic_matrix = np.eye(4)
         self.last_click = np.array([0, 0]) # This contains the last clicked position
@@ -60,9 +60,9 @@ class Camera():
         self.block_detections = np.array([])
 
         # Intrinsic matrix as calibrated using the checkerboard in Checkpoint 1, Task 4
-        self.intrisic_matrix = np.array([[898.1038628, 0, 644.0920518], 
-                                      [0, 900.632657, 340.2840602], 
-                                      [0, 0, 1]])
+        # self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
+        #                               [0, 900.632657, 340.2840602], 
+        #                               [0, 0, 1]])
         
         # Extrinsic matrix as physically measured in Checkpoint 1, Task 5
         theta = 188
@@ -184,7 +184,7 @@ class Camera():
         @param      file  The file
         """
 
-        self.intrisic_matrix = np.array([[898.1038628, 0, 644.0920518], 
+        self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
         self.extrinsic_matrix = np.array([[1, 0, 0, 0], 
@@ -197,7 +197,7 @@ class Camera():
         @brief      Transforms pixel coordinates into the world frame
         
         """
-        camera_frame = z * np.linalg.inv(self.intrisic_matrix) @ np.array([u, v, 1]).reshape(3,1)
+        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ np.array([u, v, 1]).reshape(3,1)
         world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
 
@@ -285,24 +285,24 @@ class Camera():
 
         self.TagImageFrame = modified_image
         
-    # def recover_homogenous_transform_pnp(self, msg, world_points, K):
-    #     image_points_raw = []
-    #     for detection in msg.detections:
-    #         center_x = detection.centre.x
-    #         center_y = detection.centre.y
+    def recover_homogenous_transform_pnp(self, msg, world_points, K):
+        image_points_raw = []
+        for detection in msg.detections:
+            center_x = detection.centre.x
+            center_y = detection.centre.y
             
-    #         image_points_raw.append((center_x, center_y))
-    #         if len(image_points_raw) == 4:
-    #             break
+            image_points_raw.append((center_x, center_y))
+            if len(image_points_raw) == 4:
+                break
             
-    #     image_points = np.int32([image_points_raw])    
-    #     [_, R_exp, t] = cv2.solvePnP(self.tag_locations,
-    #                     			image_points,
-    #                             	self.intrinsic_matrix,
-    #                              	self.distortion,
-    #                              	flags=cv2.SOLVEPNP_ITERATIVE)
-    #     R, _ = cv2.Rodrigues(R_exp)
-    #     return np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
+        image_points = np.int32([image_points_raw])    
+        [_, R_exp, t] = cv2.solvePnP(self.tag_locations,
+                        			image_points,
+                                	self.intrinsic_matrix,
+                                 	self.distortion,
+                                 	flags=cv2.SOLVEPNP_ITERATIVE)
+        R, _ = cv2.Rodrigues(R_exp)
+        return np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
 
 
 class ImageListener(Node):
