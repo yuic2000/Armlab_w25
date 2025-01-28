@@ -9,6 +9,7 @@ import numpy as np
 # expm is a matrix exponential function
 from scipy.linalg import expm
 
+D2R = np.pi / 180.0
 
 def clamp(angle):
     """!
@@ -44,17 +45,17 @@ def FK_dh(dh_params, joint_angles, link):
 
     @return     a transformation matrix representing the pose of the desired link
     """
+    joint_angles_rads = joint_angles * D2R
+    dh_params[:, -1] = joint_angles_rads
     
-    # T = np.eye(4)
-    # for i in range(link):
-    #     T_i = get_transform_from_dh(dh_params[i])
-    #     T = T @ T_i
-    # return T
-    
-    pass
+    T = np.eye(4)
+    for i in range(link):
+        T_i = get_transform_from_dh(dh_params[i])
+        T = T @ T_i
+    return T
 
 
-def get_transform_from_dh(a, alpha, d, theta):
+def get_transform_from_dh(dh_param):
     """!
     @brief      Gets the transformation matrix T from dh parameters.
 
@@ -67,15 +68,13 @@ def get_transform_from_dh(a, alpha, d, theta):
 
     @return     The 4x4 transformation matrix.
     """
-    # T = np.array([
-    #     [ np.cos(theta), -np.sin(theta)*np.cos(alpha),  np.sin(theta)*np.sin(alpha), a*np.cos(theta)],
-    #     [ np.sin(theta),  np.cos(theta)*np.cos(alpha), -np.cos(theta)*np.sin(alpha), a*np.sin(theta)],
-    #     [             0,              np.sin(alpha),              np.cos(alpha),             d ],
-    #     [             0,                          0,                          0,             1 ]
-    # ])
-    # return T
-    pass
-
+    T = np.array([
+        [ np.cos(dh_param[3]), -np.sin(dh_param[3]) * np.cos(dh_param[1]),  np.sin(dh_param[3]) * np.sin(dh_param[1]), dh_param[0]*np.cos(dh_param[3])],
+        [ np.sin(dh_param[3]),  np.cos(dh_param[3]) * np.cos(dh_param[1]), -np.cos(dh_param[3]) * np.sin(dh_param[1]), dh_param[0]*np.sin(dh_param[3])],
+        [ 0,                    np.sin(dh_param[1]),                        np.cos(dh_param[1]),                       dh_param[2] ],
+        [ 0,                    0,                                          0,                                         1 ]
+    ])
+    return T
 
 def get_euler_angles_from_T(T):
     """!
@@ -88,31 +87,29 @@ def get_euler_angles_from_T(T):
 
     @return     The euler angles from T.
     """
-    # R = T[0:3, 0:3]
-    # # For ZYZ:
-    # #  theta = arccos(R[2,2])
-    # #  phi   = arctan2(R[1,2], R[0,2])
-    # #  psi   = arctan2(R[2,1], -R[2,0])
+    R = T[0:3, 0:3]
+    # For ZYZ:
+    #  theta = arccos(R[2,2])
+    #  phi   = arctan2(R[1,2], R[0,2])
+    #  psi   = arctan2(R[2,1], -R[2,0])
 
-    # eps = 1e-9
-    # # Handle potential singularities near R[2,2] = ±1
-    # if abs(R[2,2] - 1.0) < eps:
-    #     # close to +1
-    #     theta = 0.0
-    #     phi   = 0.0
-    #     psi   = np.arctan2(R[1,0], R[0,0])  # rotation about Z
-    # elif abs(R[2,2] + 1.0) < eps:
-    #     # close to -1
-    #     theta = np.pi
-    #     phi   = 0.0
-    #     psi   = np.arctan2(R[1,0], R[0,0])  # rotation about Z
-    # else:
-    #     theta = np.arccos(R[2,2])
-    #     phi   = np.arctan2(R[1,2], R[0,2])
-    #     psi   = np.arctan2(R[2,1], -R[2,0])
-    # return (phi, theta, psi)
-    pass
-
+    eps = 1e-9
+    # Handle potential singularities near R[2,2] = ±1
+    if abs(R[2,2] - 1.0) < eps:
+        # close to +1
+        theta = 0.0
+        phi   = 0.0
+        psi   = np.arctan2(R[1,0], R[0,0])  # rotation about Z
+    elif abs(R[2,2] + 1.0) < eps:
+        # close to -1
+        theta = np.pi
+        phi   = 0.0
+        psi   = np.arctan2(R[1,0], R[0,0])  # rotation about Z
+    else:
+        theta = np.arccos(R[2,2])
+        phi   = np.arctan2(R[1,2], R[0,2])
+        psi   = np.arctan2(R[2,1], -R[2,0])
+    return (phi, theta, psi)
 
 def get_pose_from_T(T):
     """!
@@ -124,10 +121,9 @@ def get_pose_from_T(T):
 
     @return     The pose vector from T.
     """
-    # x, y, z = T[0, 3], T[1, 3], T[2, 3]
-    # (phi, theta, psi) = get_euler_angles_from_T(T)
-    # return [x, y, z, phi, theta, psi]
-    pass
+    x, y, z = T[0, 3], T[1, 3], T[2, 3]
+    (phi, theta, psi) = get_euler_angles_from_T(T)
+    return [x, y, z, phi, theta, psi]
 
 
 def FK_pox(joint_angles, m_mat, s_lst):
