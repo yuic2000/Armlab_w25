@@ -120,9 +120,6 @@ class StateMachine():
 
         if self.next_state == "record_gripper_closed":
             self.record_gripper_closed()
-            
-        if self.next_state == "camera_calibration":
-            self.camera_calibration()
 
 
     """Functions run for each state"""
@@ -170,6 +167,9 @@ class StateMachine():
         self.next_state = "idle"
 
         """TODO Perform camera calibration routine here"""
+        # we have self.camera. Thus, we can call the calibration routine 
+        self.camera.recover_homogeneous_transform_pnp(self.camera.tag_detections_raw)
+        self.camera.homography_transform(self.camera.tag_detections_raw)
         self.status_message = "Calibration - Completed Calibration"
 
     """ TODO """
@@ -252,9 +252,7 @@ class StateMachine():
         self.taught_waypts[-1][-1] = 1
         print(f"Recorded gripper closed, waypoints now {self.taught_waypts[-1]}")
         self.next_state = "idle"
-        
-    def camera_calibration(self):
-        pass
+
 
 class StateMachineThread(QThread):
     """!

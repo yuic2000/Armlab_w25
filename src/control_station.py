@@ -78,8 +78,7 @@ class Gui(QMainWindow):
         nxt_if_arm_init = lambda next_state: self.sm.set_next_state(next_state)
         self.ui.btn_estop.clicked.connect(self.estop)
         self.ui.btn_init_arm.clicked.connect(self.initRxarm)
-        self.ui.btn_torq_off.clicked.connect(
-            lambda: self.rxarm.disable_torque())
+        self.ui.btn_torq_off.clicked.connect(lambda: self.rxarm.disable_torque())
         self.ui.btn_torq_on.clicked.connect(lambda: self.rxarm.enable_torque())
         self.ui.btn_sleep_arm.clicked.connect(lambda: self.rxarm.sleep())
         self.ui.btn_calibrate.clicked.connect(partial(nxt_if_arm_init, 'calibrate'))
@@ -103,8 +102,6 @@ class Gui(QMainWindow):
         self.ui.btnUser6.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_open'))
         self.ui.btnUser7.setText('Recd Gripper Closed')
         self.ui.btnUser7.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_closed'))
-        self.ui.btnUser8.setText('Camera Calibration')
-        self.ui.btnUser8.clicked.connect(partial(nxt_if_arm_init, 'camera_calibration'))
 
         # Sliders
         for sldr in self.joint_sliders:
