@@ -45,13 +45,17 @@ def FK_dh(dh_params, joint_angles, link):
 
     @return     a transformation matrix representing the pose of the desired link
     """
-    joint_angles_rads = joint_angles * D2R
-    dh_params[:, -1] = joint_angles_rads
     
     T = np.eye(4)
     for i in range(link):
-        T_i = get_transform_from_dh(dh_params[i])
-        T = T @ T_i
+        a = dh_params[i][0]
+        alpha = dh_params[i][1]
+        d = dh_params[i][2]
+        theta = dh_params[i][3] + joint_angles[i]
+    
+        T_i = get_transform_from_dh([a, alpha, d, theta])
+        T = T @ T_i  
+
     return T
 
 
@@ -62,7 +66,7 @@ def get_transform_from_dh(dh_param):
     TODO: Find the T matrix from a row of a DH table
 
     @param      a      a meters
-    @param      alpha  alpha radians
+    @param      alpha  alpha radians    
     @param      d      d meters
     @param      theta  theta radians
 
@@ -123,7 +127,7 @@ def get_pose_from_T(T):
     """
     x, y, z = T[0, 3], T[1, 3], T[2, 3]
     (phi, theta, psi) = get_euler_angles_from_T(T)
-    return [x, y, z, phi, theta, psi]
+    return [x*1000, y*1000, z*1000, phi, theta, psi]
 
 
 def FK_pox(joint_angles, m_mat, s_lst):
