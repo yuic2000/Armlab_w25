@@ -142,7 +142,8 @@ class Camera():
         """
 
         try:
-            frame = cv2.resize(self.GridFrame, (1280, 720))
+            hom_frame = cv2.warpPerspective(self.GridFrame, self.H, (self.GridFrame.shape[1], self.GridFrame.shape[0]))
+            frame = cv2.resize(hom_frame, (1280, 720))
             img = QImage(frame, frame.shape[1], frame.shape[0],
                          QImage.Format_RGB888)
             return img
@@ -200,24 +201,26 @@ class Camera():
         @param      file  The file
         """
 
-        self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
-                                      [0, 900.632657, 340.2840602], 
-                                      [0, 0, 1]])
-        self.extrinsic_matrix = np.array([[1, 0, 0, 0], 
-                                       [0, np.cos(173*np.pi/180), -np.sin(173*np.pi/180), 335], 
-                                       [0, np.sin(173*np.pi/180), np.cos(173*np.pi/180), 990],
-                                       [0, 0, 0, 1]])           # rotate 173 degree along x axis CCW
+        # self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
+        #                               [0, 900.632657, 340.2840602], 
+        #                               [0, 0, 1]])
+        # self.extrinsic_matrix = np.array([[1, 0, 0, 0], 
+        #                                [0, np.cos(173*np.pi/180), -np.sin(173*np.pi/180), 335], 
+        #                                [0, np.sin(173*np.pi/180), np.cos(173*np.pi/180), 990],
+        #                                [0, 0, 0, 1]])           # rotate 173 degree along x axis CCW
         
-    def transformCoordinate_pixel2world(self, u, v, z):
+    def transformCoordinate_pixel2world(self, u, v):
         """
         @brief      Transforms pixel coordinates into the world frame
         
         """
         # Dehomogenizing the mouse coordinates
         mouse_coords = np.linalg.inv(self.H) @ np.array([u, v, 1]).reshape(3, 1)
-        # Projecting the mouse coordingates into the camera frame - note that we have to normalize the mouse coordinates 
-        # since the homography transform won't preserve the coordinates as [u, v, 1]
-        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ (mouse_coords/mouse_coords[-1])
+        # normalize mouse coordinates and get z on the pixel frame before homography
+        mouse_coords = mouse_coords / mouse_coords[2]       
+        z = self.DepthFrameRaw[int(mouse_coords[1])][int(mouse_coords[0])]
+        # Projecting the mouse coordingates into the camera frame
+        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ mouse_coords
         # Transforming the camera frame coordinates of the mouse into the world frame
         world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
@@ -256,14 +259,14 @@ class Camera():
         x_range = np.linspace(LL[0], UR[0], 21)     # spacing: 50, 21 pts
         y_range = np.linspace(LL[1], UR[1], 14)     # spacing: 50, 14 pts
 
-        wrld_grid_pts = np.array([(x, y, -990) for x in x_range for y in y_range])
+        wrld_grid_pts = np.array([(x, y, -5) for x in x_range for y in y_range])
 
         # Highlight AprilTag center
         for wrld_pt in wrld_grid_pts:
             camera_pt = self.extrinsic_matrix @ np.append(wrld_pt, 1)       # [X, Y, Z, 1]
-            pixel_pt = self.intrinsic_matrix @ camera_pt[:3] / camera_pt[2]
+            pixel_pt = self.intrinsic_matrix @ camera_pt[:3] / camera_pt[2] # before homography
             center_x, center_y = pixel_pt[0], pixel_pt[1]
-            print(center_x, center_y)
+            # print(center_x, center_y)
             cv2.circle(modified_image, (int(center_x), int(center_y)),
                   2, 
                   (0, 255, 0), 2
@@ -350,6 +353,41 @@ class Camera():
                                  	flags=cv2.SOLVEPNP_ITERATIVE)
         R, _ = cv2.Rodrigues(R_exp)
         self.extrinsic_matrix = np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
+        
+    def recover_homogeneous_transform_svd(self, msg):
+        """
+        Returns an extrinsic matrix after performing PnP pose computation
+        """           
+               
+        # Converting known apriltag grid locations into 3D points by appending zeros for the z-axis
+        world_points_interm = np.array(self.tag_locations)
+        # world_points_3d = np.float32(np.vstack((np.column_stack((world_points_interm,np.zeros(4))), self.height_offset_tag_locations)))
+        world_points_3d = np.float32(np.column_stack((world_points_interm, np.zeros(4))))
+        # Converting image points into int32 representations for cv2 
+        image_points_interm = np.float32(list(msg.values()))    
+        image_points = np.column_stack((image_points_interm, np.ones(4)))
+        
+        # # Debugging
+        # print(type(world_points_3d))
+        # print(world_points_3d)
+        # print(image_points)
+        # print(type(image_points))
+        
+        # SVD stuff here
+        world_bar = np.sum(world_points_3d, axis = 0) / np.shape(world_points_3d)[0]
+        image_bar = np.sum(image_points, axis = 0) / np.shape(image_points)[0]
+        
+        H = np.dot(np.transpose(world_points_3d - world_bar), image_points - image_bar)
+        [U, S, V] = np.linalg.svd(H)
+        print(H.shape)
+        
+        R = np.matmul(V, np.transpose(U))
+        if np.linalg.det(R) < 0:
+            V = [1, 1, -1] * V
+            R = np.matmul(V, np.transpose(U))
+            
+        T = world_bar - np.dot(image_bar, R)
+        self.extrinsic_matrix = np.row_stack((np.column_stack((R, T)), (0, 0, 0, 1)))
     
     # def recover_homogeneous_transform_affine(self, msg):
             

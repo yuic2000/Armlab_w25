@@ -168,7 +168,8 @@ class StateMachine():
 
         """TODO Perform camera calibration routine here"""
         # we have self.camera. Thus, we can call the calibration routine 
-        self.camera.recover_homogeneous_transform_pnp(self.camera.tag_detections_raw)
+        # self.camera.recover_homogeneous_transform_pnp(self.camera.tag_detections_raw)
+        self.camera.recover_homogeneous_transform_svd(self.camera.tag_detections_raw)
         self.camera.homography_transform(self.camera.tag_detections_raw)
         self.status_message = "Calibration - Completed Calibration"
 

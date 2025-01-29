@@ -233,7 +233,7 @@ class Gui(QMainWindow):
             z = self.camera.DepthFrameRaw[pt.y()][pt.x()]
             self.ui.rdoutMousePixels.setText("(%.0f,%.0f,%.0f)" %
                                              (pt.x(), pt.y(), z))
-            world_frame = self.camera.transformCoordinate_pixel2world(pt.x(), pt.y(), z)
+            world_frame = self.camera.transformCoordinate_pixel2world(pt.x(), pt.y())
 
             self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" % (world_frame[0], world_frame[1], world_frame[2]))
 
