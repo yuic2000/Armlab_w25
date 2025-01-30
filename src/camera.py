@@ -259,7 +259,7 @@ class Camera():
         x_range = np.linspace(LL[0], UR[0], 21)     # spacing: 50, 21 pts
         y_range = np.linspace(LL[1], UR[1], 14)     # spacing: 50, 14 pts
 
-        wrld_grid_pts = np.array([(x, y, -5) for x in x_range for y in y_range])
+        wrld_grid_pts = np.array([(x, y, -1) for x in x_range for y in y_range])
 
         # Highlight AprilTag center
         for wrld_pt in wrld_grid_pts:

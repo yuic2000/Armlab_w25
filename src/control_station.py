@@ -214,6 +214,12 @@ class Gui(QMainWindow):
             self.sm.set_next_state("idle")
             self.ui.SliderFrame.setEnabled(False)
             self.ui.chk_directcontrol.setChecked(False)
+            
+    def linearizeZAxis(self, y_coord):
+        m = 0.032685
+        c = -13.087455
+        z_lin = m * y_coord + c
+        return z_lin
 
     def trackMouse(self, mouse_event):
         """!
@@ -234,8 +240,8 @@ class Gui(QMainWindow):
             self.ui.rdoutMousePixels.setText("(%.0f,%.0f,%.0f)" %
                                              (pt.x(), pt.y(), z))
             world_frame = self.camera.transformCoordinate_pixel2world(pt.x(), pt.y())
-
-            self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" % (world_frame[0], world_frame[1], world_frame[2]))
+            z_coord = self.linearizeZAxis(world_frame[1])
+            self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" % (world_frame[0], world_frame[1], world_frame[2] - z_coord))
 
 
     def calibrateMousePress(self, mouse_event):
