@@ -39,36 +39,41 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.camera_calibrated = False
-        # self.intrinsic_matrix = np.array([[900.7150268554688, 0, 652.2869262695312], 
-        #                               	[0, 900.1925048828125, 358.359619140625], 
-        #                             	[0, 0, 1]])
+        
         # Camera distortion parameters
         self.distortion = np.array([0.1490122675895691, -0.5096240639686584, -0.0006352968048304319, 
                                     0.0005230441456660628, 0.47986456751823425])
+        
         # Homography matrix - this will be updated in homography_transform
         self.H = np.eye(3)
+        
         # extrinsic matrix - this will be updated by recover_homogeneous_transform_pnp
         self.extrinsic_matrix = np.eye(4)
+        
         # This contains the last clicked position
         self.last_click = np.array([0, 0]) 
+        
         # This is automatically set to True whenever a click is received. Set it to False yourself after processing a click
         self.new_click = False 
+        
         # Click points - don't really need to change these right now (as of Checkpoint 2)
         self.rgb_click_points = np.zeros((5, 2), int)
         self.depth_click_points = np.zeros((5, 2), int)
-        self.grid_x_points = np.arange(-450, 500, 50)
-        self.grid_y_points = np.arange(-175, 525, 50)
         
         # Grid points - this is used to validate the extrinsic matrix and homography transform, will be used in projectGrid
+        self.grid_x_points = np.arange(-450, 500, 50)
+        self.grid_y_points = np.arange(-175, 525, 50)
         self.grid_points = np.array(np.meshgrid(self.grid_x_points, self.grid_y_points))
+        
         # The detected apriltag locations from the camera
         self.tag_detections = np.array([])
+        
         # The actual world locations of the apriltags in order of tag id 1 thru 4
         self.tag_locations = [[-250, -25], [250, -25], [250, 275], [-250, 275]]  
-        # When commented in, the height offset tags in world coordinates
-        # self.height_offset_tag_locations = np.array([[350, 175, 184], [-400, 25, 92]])
+        
         # Dictionary of detected apriltags to use in extrinsic matrix calculation and homography transform
         self.tag_detections_raw = {}
+        
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = np.array([])
@@ -78,12 +83,6 @@ class Camera():
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
         
-        # Extrinsic matrix as physically measured in Checkpoint 1, Task 5
-        # theta = 188
-        # self.extrinsic_matrix = np.array([[1, 0, 0, 10], 
-        #                                [0, np.cos(theta*np.pi/180), -np.sin(theta*np.pi/180), 155], 
-        #                                [0, np.sin(theta*np.pi/180), np.cos(theta*np.pi/180), 1035],
-        #                                [0, 0, 0, 1]])           # rotate 172 degree along x axis CCW
         self.projected_tag_locations_2d = [[390, 535], [890, 535], [890, 235], [390, 235]]
 
     def processVideoFrame(self):
@@ -152,7 +151,7 @@ class Camera():
 
     def convertQtDepthFrame(self):
         """!
-       @brief      Converts colormaped depth frame to format suitable for Qt
+       @brief      Converts colormapped depth frame to format suitable for Qt
 
        @return     QImage
        """
@@ -200,14 +199,7 @@ class Camera():
 
         @param      file  The file
         """
-
-        # self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
-        #                               [0, 900.632657, 340.2840602], 
-        #                               [0, 0, 1]])
-        # self.extrinsic_matrix = np.array([[1, 0, 0, 0], 
-        #                                [0, np.cos(173*np.pi/180), -np.sin(173*np.pi/180), 335], 
-        #                                [0, np.sin(173*np.pi/180), np.cos(173*np.pi/180), 990],
-        #                                [0, 0, 0, 1]])           # rotate 173 degree along x axis CCW
+        pass
         
     def transformCoordinate_pixel2world(self, u, v):
         """
@@ -339,12 +331,6 @@ class Camera():
         # Converting image points into int32 representations for cv2 
         image_points = np.float32(list(msg.values()))    
         
-        # # Debugging
-        # print(type(world_points_3d))
-        # print(world_points_3d)
-        # print(image_points)
-        # print(type(image_points))
-        
         # Solving for PnP rotation and transformation
         [_, R_exp, t] = cv2.solvePnP(world_points_3d,
                         			image_points,
@@ -354,67 +340,6 @@ class Camera():
         R, _ = cv2.Rodrigues(R_exp)
         self.extrinsic_matrix = np.row_stack((np.column_stack((R, t)), (0, 0, 0, 1)))
         
-    def recover_homogeneous_transform_svd(self, msg):
-        """
-        Returns an extrinsic matrix after performing PnP pose computation
-        """           
-               
-        # Converting known apriltag grid locations into 3D points by appending zeros for the z-axis
-        world_points_interm = np.array(self.tag_locations)
-        # world_points_3d = np.float32(np.vstack((np.column_stack((world_points_interm,np.zeros(4))), self.height_offset_tag_locations)))
-        world_points_3d = np.float32(np.column_stack((world_points_interm, np.zeros(4))))
-        # Converting image points into int32 representations for cv2 
-        image_points_interm = np.float32(list(msg.values()))    
-        image_points = np.column_stack((image_points_interm, np.ones(4)))
-        
-        # # Debugging
-        # print(type(world_points_3d))
-        # print(world_points_3d)
-        # print(image_points)
-        # print(type(image_points))
-        
-        # SVD stuff here
-        world_bar = np.sum(world_points_3d, axis = 0) / np.shape(world_points_3d)[0]
-        image_bar = np.sum(image_points, axis = 0) / np.shape(image_points)[0]
-        
-        H = np.dot(np.transpose(world_points_3d - world_bar), image_points - image_bar)
-        [U, S, V] = np.linalg.svd(H)
-        print(H.shape)
-        
-        R = np.matmul(V, np.transpose(U))
-        if np.linalg.det(R) < 0:
-            V = [1, 1, -1] * V
-            R = np.matmul(V, np.transpose(U))
-            
-        T = world_bar - np.dot(image_bar, R)
-        self.extrinsic_matrix = np.row_stack((np.column_stack((R, T)), (0, 0, 0, 1)))
-    
-    # def recover_homogeneous_transform_affine(self, msg):
-            
-    #     # Converting known apriltag grid locations into 3D points by appending zeros for the z-axis
-    #     world_points_interm = np.array(self.tag_locations)[:3]
-    #     # world_points_3d = np.float32(np.vstack((np.column_stack((world_points_interm,np.zeros(4))), self.height_offset_tag_locations)))
-    #     world_points_3d = np.float32(np.column_stack((world_points_interm,np.zeros(3))))
-    #     world_points_4d = np.float32(np.column_stack((world_points_3d,np.ones(3))))
-
-    #     # Converting image points into int32 representations for cv2 
-    #     image_points_3d = np.float32(np.column_stack((np.asarray(list(msg.values())), np.ones(4))))
-    #     image_points_4d = np.float32(np.column_stack((image_points_3d, np.ones(4))))[:3]
-        
-    #     # construct intermediate matrix
-    #     Q = image_points_4d[1:] - image_points_4d[0]
-    #     Q_prime = world_points_4d[1:] - world_points_4d[0]
-        
-    #     # calculate rotation matrix
-    #     R = np.dot(np.linalg.inv(np.row_stack((Q, np.cross(*Q)))),
-    #            np.row_stack((Q_prime, np.cross(*Q_prime))))
-
-    #     # calculate translation vector
-    #     t = world_points_4d[0] - np.dot(image_points_4d[0], R)
-
-    #     # calculate affine transformation matrix
-    #     return np.transpose(np.column_stack((np.row_stack((R, t)), (0, 0, 0, 1))))
-    
 
     def homography_transform(self, msg):
         """ 
