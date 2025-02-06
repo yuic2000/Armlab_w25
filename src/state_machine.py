@@ -171,6 +171,8 @@ class StateMachine():
         self.camera.recover_homogeneous_transform_pnp(self.camera.tag_detections_raw)
         # self.camera.recover_homogeneous_transform_svd(self.camera.tag_detections_raw)
         self.camera.homography_transform(self.camera.tag_detections_raw)
+        # Setting the calibration as complete
+        self.camera.camera_calibrated = True
         self.status_message = "Calibration - Completed Calibration"
 
     """ TODO """

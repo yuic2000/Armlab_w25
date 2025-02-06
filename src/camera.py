@@ -77,13 +77,25 @@ class Camera():
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = np.array([])
+        self.block_colors = list((
+            {'id': 'red', 'color': (10, 10, 127)},
+            {'id': 'orange', 'color': (30, 75, 150)},
+            {'id': 'yellow', 'color': (30, 150, 200)},
+            {'id': 'green', 'color': (20, 60, 20)},
+            {'id': 'blue', 'color': (100, 50, 0)},
+            {'id': 'violet', 'color': (100, 40, 80)}
+        ))
+        self.font = cv2.FONT_HERSHEY_SIMPLEX
 
+        
         # Intrinsic matrix as calibrated using the checkerboard in Checkpoint 1, Task 4
         self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
                                       [0, 900.632657, 340.2840602], 
                                       [0, 0, 1]])
         
         self.projected_tag_locations_2d = [[390, 535], [890, 535], [890, 235], [390, 235]]
+        
+        self.DepthFrameWarped = np.zeros((720,1280)).astype(np.uint16)
 
     def processVideoFrame(self):
         """!
@@ -96,7 +108,11 @@ class Camera():
         """!
         @brief Converts frame to colormaped formats in HSV and RGB
         """
-        self.DepthFrameHSV[..., 0] = self.DepthFrameRaw >> 1
+        if self.camera_calibrated:
+            self.DepthFrameHSV[..., 0] = self.DepthFrameWarped >> 1
+        else:
+            self.DepthFrameHSV[..., 0] = self.DepthFrameRaw >> 1
+        
         self.DepthFrameHSV[..., 1] = 0xFF
         self.DepthFrameHSV[..., 2] = 0x9F
         self.DepthFrameRGB = cv2.cvtColor(self.DepthFrameHSV,
@@ -127,7 +143,8 @@ class Camera():
         try:
             hom_frame = cv2.warpPerspective(self.VideoFrame, self.H, (self.VideoFrame.shape[1], self.VideoFrame.shape[0]))
             frame = cv2.resize(hom_frame, (1280, 720))
-            img = QImage(frame, frame.shape[1], frame.shape[0],
+            block_frame = self.blockDetector(frame)
+            img = QImage(block_frame, frame.shape[1], frame.shape[0],
                          QImage.Format_RGB888)
             return img
         except:
@@ -217,14 +234,75 @@ class Camera():
         world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
 
-    def blockDetector(self):
+    def transform_depth(self):
+        # K = intrinsic matrix, T_i = extrinsic matrix
+        T_desired = np.array([
+            [1, 0, 0, 0],
+            [0, -1, 0, 0],
+            [0, 0, -1, 990],
+            [0, 0, 0, 1]
+        ])
+        depth_im = self.DepthFrameRaw.copy()
+        h, w = depth_im.shape[:2]
+        T_relative = np.dot(T_desired, np.linalg.inv(self.extrinsic_matrix))
+        
+        # For the depth values, we first transform to 3D points, apply a relative transformation, and project back to depth values
+        u = np.repeat(np.arange(w)[None, :], h, axis = 0)
+        v = np.repeat(np.arange(h)[:, None], w, axis = 1)
+        
+        Z = depth_im
+        X = (u - self.intrinsic_matrix[0, 2]) * Z / self.intrinsic_matrix[0, 0]
+        Y = (v - self.intrinsic_matrix[1, 2]) * Z / self.intrinsic_matrix[1, 1]
+        
+        points_camera_frame = np.stack((X, Y, Z, np.ones_like(Z)), axis = -1)
+        pts_transformed = np.dot(points_camera_frame, T_relative.T)
+        depth_transformed = pts_transformed[..., 2]
+        
+        warped_depth = np.uint16(cv2.warpPerspective(depth_transformed, self.H, (w, h)))
+    
+        # scaled_depth = cv2.convertScaleAbs(clipped_depth, alpha = (255.0/max_depth_value))
+        self.DepthFrameWarped = warped_depth # scaled_depth
+        
+    def retrieve_area_color(self, data, contour, labels):
+        mask = np.zeros(data.shape[:2], dtype="uint8")
+        cv2.drawContours(mask, [contour], -1, 255, -1)
+        mean = cv2.mean(data, mask=mask)[:3]
+        min_dist = (np.inf, None)
+        for label in labels:
+            d = np.linalg.norm(label["color"] - np.array(mean))
+            if d < min_dist[0]:
+                min_dist = (d, label["id"])
+        return min_dist[1] 
+
+        
+    def blockDetector(self, frame):
         """!
         @brief      Detect blocks from rgb
 
                     TODO: Implement your block detector here. You will need to locate blocks in 3D space and put their XYZ
                     locations in self.block_detections
         """
-        pass
+        
+        rgb_im = frame.copy()
+        cnt_im = frame.copy()
+        self.detectBlocksInDepthImage()
+        
+        cv2.rectangle(cnt_im, (185, 80), (1095, 635), (255, 0, 0), 2)
+        cv2.rectangle(cnt_im, (540, 365), (740, 680), (255, 0, 0), 2)
+        cv2.drawContours(cnt_im, self.block_contours, -1, (0,255,255), 3)
+        
+        for contour in self.block_contours:
+            color = self.retrieve_area_color(rgb_im, contour, self.block_colors)
+            theta = cv2.minAreaRect(contour)[2]
+            M = cv2.moments(contour)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            cv2.putText(cnt_im, color, (cx-30, cy+40), self.font, 1.0, (0,0,0), thickness=2)
+            cv2.putText(cnt_im, str(int(theta)), (cx, cy), self.font, 0.5, (255,255,255), thickness=2)
+            # print(color, int(theta), cx, cy)
+            
+        mod_frame = cnt_im
+        return mod_frame
 
     def detectBlocksInDepthImage(self):
         """!
@@ -232,7 +310,18 @@ class Camera():
 
                     TODO: Implement a blob detector to find blocks in the depth image
         """
-        pass
+        
+        depth_im = self.DepthFrameWarped.copy()
+        mask = np.zeros_like(depth_im, dtype = np.uint8)
+        
+        cv2.rectangle(mask, (185, 80), (1095, 635), 255, cv2.FILLED)
+        cv2.rectangle(mask, (540, 365), (740, 680), 0, cv2.FILLED)
+        
+        thresh = cv2.bitwise_and(cv2.inRange(depth_im, 0, 900), mask)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        self.block_contours = contours
+        # print(self.block_contours)
 
     def projectGridInRGBImage(self):
         """!
@@ -419,6 +508,8 @@ class DepthListener(Node):
         except CvBridgeError as e:
             print(e)
         self.camera.DepthFrameRaw = cv_depth
+        if self.camera.camera_calibrated:
+            self.camera.transform_depth()
         # self.camera.DepthFrameRaw = self.camera.DepthFrameRaw / 2
         self.camera.ColorizeDepthFrame()
 
