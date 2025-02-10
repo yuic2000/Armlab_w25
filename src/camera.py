@@ -78,12 +78,12 @@ class Camera():
         self.block_contours = np.array([])
         self.block_detections = np.array([])
         self.block_colors = list((
-            {'id': 'red', 'color': (10, 10, 127)},
-            {'id': 'orange', 'color': (30, 75, 150)},
-            {'id': 'yellow', 'color': (30, 150, 200)},
-            {'id': 'green', 'color': (20, 60, 20)},
-            {'id': 'blue', 'color': (100, 50, 0)},
-            {'id': 'violet', 'color': (100, 40, 80)}
+            {'id': 'red', 'color':    (127, 10,  10)},
+            {'id': 'orange', 'color': (150, 75,  30)},
+            {'id': 'yellow', 'color': (200, 150, 30)},
+            {'id': 'green', 'color':  (20, 60,  20)},
+            {'id': 'blue', 'color':   (0 , 50,  100)},
+            {'id': 'violet', 'color': (8 , 40,  100)}
         ))
         self.font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -312,12 +312,13 @@ class Camera():
         """
         
         depth_im = self.DepthFrameWarped.copy()
-        mask = np.zeros_like(depth_im, dtype = np.uint8)
+        mask_upper = np.zeros_like(depth_im, dtype = np.uint8)
+        mask_lower = np.zeros_like(depth_im, dtype = np.uint8)
         
-        cv2.rectangle(mask, (185, 80), (1095, 635), 255, cv2.FILLED)
-        cv2.rectangle(mask, (540, 365), (740, 680), 0, cv2.FILLED)
+        cv2.rectangle(mask_upper, (185, 80), (1095, 635), 255, cv2.FILLED)
+        cv2.rectangle(mask_upper, (540, 365), (740, 680), 0, cv2.FILLED)
         
-        thresh = cv2.bitwise_and(cv2.inRange(depth_im, 0, 900), mask)
+        thresh = cv2.bitwise_and(cv2.inRange(depth_im, 0, 985), mask_upper)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         self.block_contours = contours
