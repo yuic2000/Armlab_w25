@@ -75,7 +75,7 @@ class Camera():
         self.tag_detections_raw = {}
         
         """ block info """
-        self.block_contours = np.array([])
+        self.block_contours = []
         self.block_detections = np.array([])
         self.block_colors = list((
             {'id': 'red', 'color':    (127, 10,  10)},
@@ -314,14 +314,19 @@ class Camera():
         depth_im = self.DepthFrameWarped.copy()
         mask_upper = np.zeros_like(depth_im, dtype = np.uint8)
         mask_lower = np.zeros_like(depth_im, dtype = np.uint8)
+                
+        cv2.rectangle(mask_upper, (185, 80), (1095, 365), 255, cv2.FILLED)
         
-        cv2.rectangle(mask_upper, (185, 80), (1095, 635), 255, cv2.FILLED)
-        cv2.rectangle(mask_upper, (540, 365), (740, 680), 0, cv2.FILLED)
+        cv2.rectangle(mask_lower, (185, 365), (1095, 635), 255, cv2.FILLED)
+        cv2.rectangle(mask_lower, (540, 365), (740, 680), 0, cv2.FILLED)
         
-        thresh = cv2.bitwise_and(cv2.inRange(depth_im, 0, 985), mask_upper)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        thresh_upper = cv2.bitwise_and(cv2.inRange(depth_im, 0, 985), mask_upper)
+        contours_upper, _ = cv2.findContours(thresh_upper, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        self.block_contours = contours
+        thresh_lower = cv2.bitwise_and(cv2.inRange(depth_im, 0, 995), mask_lower)
+        contours_lower, _ = cv2.findContours(thresh_lower, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        self.block_contours = list(contours_upper) + list(contours_lower)
         # print(self.block_contours)
 
     def projectGridInRGBImage(self):
