@@ -448,6 +448,19 @@ class Camera():
         H = cv2.findHomography(image_points, desired_image_points)[0]
         self.H = H
         
+    def retrieve_clicked_pos(self):
+        z = self.DepthFrameWarped[self.last_click[1]][self.last_click[0]]
+        
+        world_frame = self.transformCoordinate_pixel2world(self.last_click[0], self.last_click[1])
+        z_coord = self.linearizeZAxis(world_frame[1])
+        return (world_frame[0], world_frame[1], world_frame[2] - z_coord)
+    
+    def linearizeZAxis(self, y_coord):
+        m = 0.032685
+        c = -13.087455
+        z_lin = m * y_coord + c
+        return z_lin
+
 
 class ImageListener(Node):
     def __init__(self, topic, camera):
