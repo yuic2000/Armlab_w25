@@ -260,8 +260,15 @@ class StateMachine():
         self.next_state = "idle"
 
     def click_grab_place(self):
+        self.current_state = "click_grab_place"
+        self.status_message = "Click to go to a specific point"
         
-        pass
+        x, y, z = self.camera.retrieve_clicked_pos()
+        phi, theta, psi = 0.0, np.pi, 0.0 
+        pose = np.array((x, y, z, phi, theta, psi))
+        T = self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(5)
+        self.next_state = "idle"
 
 class StateMachineThread(QThread):
     """!
