@@ -13,7 +13,7 @@ You will upgrade some functions and also implement others according to the comme
 """
 import numpy as np
 from functools import partial
-from kinematics import FK_dh, FK_pox, get_pose_from_T
+from kinematics import FK_dh, FK_pox, get_pose_from_T, IK_geometric
 import time
 import csv
 import sys, os
@@ -177,6 +177,11 @@ class RXArm(InterbotixManipulatorXS):
         @return     The loads.
         """
         return self.effort_fb
+    
+    def set_desired_joint_positions(self, pose):
+        transform_mat = IK_geometric(self.dh_params, pose)
+        # self.set_positions(get_pose_from_T(transform_mat))
+        return transform_mat
 
 
     def get_ee_pose(self):
