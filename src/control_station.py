@@ -102,6 +102,8 @@ class Gui(QMainWindow):
         self.ui.btnUser6.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_open'))
         self.ui.btnUser7.setText('Recd Gripper Closed')
         self.ui.btnUser7.clicked.connect(partial(nxt_if_arm_init, 'record_gripper_closed'))
+        self.ui.btnUser8.setText('Click2Grab&Place')
+        self.ui.btnUser8.clicked.connect(partial(nxt_if_arm_init, 'click_grab_place'))
 
         # Sliders
         for sldr in self.joint_sliders:

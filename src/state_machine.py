@@ -120,7 +120,10 @@ class StateMachine():
 
         if self.next_state == "record_gripper_closed":
             self.record_gripper_closed()
-
+            
+        if self.next_state == "click_grab_place":
+            self.click_grab_place()
+            
 
     """Functions run for each state"""
 
@@ -256,6 +259,9 @@ class StateMachine():
         print(f"Recorded gripper closed, waypoints now {self.taught_waypts[-1]}")
         self.next_state = "idle"
 
+    def click_grab_place(self):
+        
+        pass
 
 class StateMachineThread(QThread):
     """!

@@ -10,6 +10,8 @@ import numpy as np
 from scipy.linalg import expm
 
 D2R = np.pi / 180.0
+R2D = 180.0 / np.pi
+
 
 def clamp(angle):
     """!
@@ -160,7 +162,6 @@ def to_s_matrix(w, v):
     """
     pass
 
-
 def IK_geometric(dh_params, pose):
     """!
     @brief      Get all possible joint configs that produce the pose.
@@ -173,4 +174,87 @@ def IK_geometric(dh_params, pose):
     @return     All four possible joint configurations in a numpy array 4x4 where each row is one possible joint
                 configuration
     """
-    pass
+    x_d, y_d, z_d, theta_d, psi_d = pose[0], pose[1], pose[2], pose[4], pose[5]   # x, y, z, theta, psi
+    # print("Desired pose: ", x_d, y_d, z_d, theta_d, psi_d)
+    theta_d = theta_d - np.pi/2  # 90 degrees offset
+
+
+    if (np.abs(x_d) < 1e-9 and np.abs(y_d) < 1e-9) or z_d < -10:
+        print("Degenerate case: x,y nearly zero => infinite or unreachable solutions for base.")
+        return [0, 0, 0, 0, 0]
+    
+    ## DH parameters
+    base_height = abs(dh_params[0][2]) * 1000       # d1, base height, 103.91 mm
+    l1 = abs(dh_params[1][0]) * 1000                # a2, link1 length, 205.73 mm
+    l2 = abs(dh_params[2][0]) * 1000                # a3, link2 length, 200 mm
+    l_wrist2ee = abs(dh_params[4][2]) * 1000        # d4, wrist to ee length, 174.15 mm
+
+    base_offset = dh_params[0][3]                   # base offset, 90 degrees
+    l1_tilted_offset = dh_params[1][3]              # 90 + 14 degrees for link_1 tilted angle
+    q1_offset = np.pi - l1_tilted_offset            # 90 - 14 degrees 
+    wrist_roll_offset = dh_params[3][3]
+
+
+    ## base angle
+    # q_base = clamp(np.arctan2(-x_d, y_d))                    # base motor, initial state x0 = 0 -> x_d/y_d
+    q_base = clamp(np.arctan2(y_d, x_d) - base_offset)*R2D     # base motor, rad
+    q_base = max(min(q_base, 120), -120)                       # geomatric limitation
+
+
+
+    ## calculate wrist position (r_eff, z_eff, D_eff)
+    r = np.sqrt(x_d**2 + y_d**2)                                # base radius
+
+    x_w = x_d + l_wrist2ee * np.cos(theta_d) * np.sin(q_base)   # wrist x
+    y_w = y_d - l_wrist2ee * np.cos(theta_d) * np.cos(q_base)   # wrist y
+    z_w = z_d + l_wrist2ee * np.sin(theta_d)                    # wrist z
+
+    r_w = np.sqrt(x_w**2 + y_w**2)                              # wrist radius
+    z_eff = z_w - base_height                                   # wrist height - base height
+    D_eff = np.sqrt(r_w**2 + z_eff**2)                          # straight line from shoulder to wrist
+
+
+    # Check reach:
+    if D_eff > (l1 + l2) or D_eff < abs(l1 - l2):
+        print("Target out of reach. D =", D_eff, " L1+L2 =", l1 + l2)
+        return [0, 0, 0, 0, 0]
+    
+
+    ## calculate elbow angle btw l1 and l2
+    cos_elbow = (l1**2 + l2**2 - D_eff**2) / (2.0 * l1 * l2)
+    cos_elbow = max(min(cos_elbow, 1.0), -1.0)              # numeric clamp
+    
+    elbow_candidates = [ np.arccos(cos_elbow), -np.arccos(cos_elbow) ]      # elbow can be "up" or "down"
+    
+
+    ## calculate shoulder, elbow, and wrist angles
+    solutions = []
+    for elbow_angle in elbow_candidates:
+        
+        # Shoulder angle:
+        beta = np.arctan2(z_eff, r_w)
+        gamma = np.arccos((l1**2 + D_eff**2 - l2**2) / (2 * l1 * D_eff))
+
+        q_shoulder = clamp(q1_offset - (beta + gamma))* R2D                # shoulder motor, q1_offset = 90 - 14 degrees
+        q_shoulder = max(min(q_shoulder, 100), -110)                       # geomatric limitation
+
+
+        # Elbow angle:
+        q_elbow = clamp(l1_tilted_offset - elbow_angle) * R2D              # elbow motor, l1_tilted_offset = 90 + 14 degrees
+        q_elbow = max(min(q_elbow, 95), -105)                              # geomatric limitation
+
+        
+        # Wrist pitch angles:
+        q_wrist_pitch = -clamp(theta_d - q_elbow - q_shoulder) * R2D        # wrist pitch motor
+        q_wrist_pitch = max(min(q_wrist_pitch, 127), -100)                       # geomatric limitation
+
+        
+        # Wrist roll angle:
+        q_wrist_roll = clamp(psi_d) * R2D                                  # wrist rotation angle, -180~180
+        # q_wrist_roll = 0.0 * R2D
+
+        sol = np.array([q_base, q_shoulder, q_elbow, q_wrist_pitch, q_wrist_roll])
+        solutions.append(sol)
+    
+    print(solutions)
+    return np.array(solutions)
