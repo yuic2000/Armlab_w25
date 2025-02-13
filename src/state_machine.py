@@ -121,8 +121,11 @@ class StateMachine():
         if self.next_state == "record_gripper_closed":
             self.record_gripper_closed()
             
-        if self.next_state == "click_grab_place":
-            self.click_grab_place()
+        if self.next_state == "click_grab":
+            self.click_grab()
+            
+        if self.next_state == "click_place":
+            self.click_place()
             
 
     """Functions run for each state"""
@@ -259,15 +262,60 @@ class StateMachine():
         print(f"Recorded gripper closed, waypoints now {self.taught_waypts[-1]}")
         self.next_state = "idle"
 
-    def click_grab_place(self):
-        self.current_state = "click_grab_place"
-        self.status_message = "Click to go to a specific point"
+    def click_grab(self):
+        self.current_state = "click_grab"
+        self.status_message = "Click to go to a specific point (pre-grasp)"
         
+        # Retrieve position
         x, y, z = self.camera.retrieve_clicked_pos()
+        print(f"x, y, z = {x}, {y}, {z}")
         phi, theta, psi = 0.0, np.pi, 0.0 
-        pose = np.array((x, y, z, phi, theta, psi))
-        T = self.rxarm.set_desired_joint_positions(pose)
-        time.sleep(5)
+        
+        # Pre-grasp
+        pose = np.array((x, y, z+55, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        
+        # Grasp
+        pose = np.array((x, y, z+10, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        self.rxarm.gripper.grasp()
+        time.sleep(2)
+        
+        # Post-grasp
+        pose = np.array((x, y, z+65, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        
+        self.next_state = "idle"
+        
+    def click_place(self):
+        self.current_state = "click_place"
+        self.status_message = "Click to go to a specific point (pre-grasp)"
+        
+        # Retrieve position
+        x, y, z = self.camera.retrieve_clicked_pos()
+        print(f"x, y, z = {x}, {y}, {z}")
+        phi, theta, psi = 0.0, np.pi, 0.0 
+        
+        # Pre-release
+        pose = np.array((x, y, z+90, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        
+        # Release
+        pose = np.array((x, y, z+45, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        self.rxarm.gripper.release()
+        time.sleep(2)
+        
+        # Post-release
+        pose = np.array((x, y, z+90, phi, theta, psi))
+        self.rxarm.set_desired_joint_positions(pose)
+        time.sleep(3)
+        
         self.next_state = "idle"
 
 class StateMachineThread(QThread):

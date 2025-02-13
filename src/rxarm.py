@@ -115,8 +115,8 @@ class RXArm(InterbotixManipulatorXS):
         return self.initialized
 
     def sleep(self):
-        self.moving_time = 5.0
-        self.accel_time = 2.0
+        self.moving_time = 2.0
+        self.accel_time = 0.5
         self.arm.go_to_home_pose(moving_time=self.moving_time,
                              accel_time=self.accel_time,
                              blocking=True)
@@ -131,6 +131,7 @@ class RXArm(InterbotixManipulatorXS):
 
          @param      joint_angles  The joint angles
          """
+        print("Setting joint positions")
         self.arm.set_joint_positions(joint_positions,
                                  moving_time=self.moving_time,
                                  accel_time=self.accel_time,
@@ -179,10 +180,9 @@ class RXArm(InterbotixManipulatorXS):
         return self.effort_fb
     
     def set_desired_joint_positions(self, pose):
-        transform_mat = IK_geometric(self.dh_params, pose)
-        # self.set_positions(get_pose_from_T(transform_mat))
-        return transform_mat
-
+        waypoint = IK_geometric(self.dh_params, pose)
+        print(waypoint)
+        self.set_positions(waypoint)
 
     def get_ee_pose(self):
         """!

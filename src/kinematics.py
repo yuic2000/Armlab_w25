@@ -176,7 +176,7 @@ def IK_geometric(dh_params, pose):
     """
     x_d, y_d, z_d, theta_d, psi_d = pose[0], pose[1], pose[2], pose[4], pose[5]   # x, y, z, theta, psi
     # print("Desired pose: ", x_d, y_d, z_d, theta_d, psi_d)
-    theta_d = theta_d - np.pi/2  # 90 degrees offset
+    theta_d = theta_d - 1.67  # 104 degrees offset
 
 
     if (np.abs(x_d) < 1e-9 and np.abs(y_d) < 1e-9) or z_d < -10:
@@ -205,8 +205,8 @@ def IK_geometric(dh_params, pose):
     ## calculate wrist position (r_eff, z_eff, D_eff)
     r = np.sqrt(x_d**2 + y_d**2)                                # base radius
 
-    x_w = x_d + l_wrist2ee * np.cos(theta_d) * np.sin(q_base)   # wrist x
-    y_w = y_d - l_wrist2ee * np.cos(theta_d) * np.cos(q_base)   # wrist y
+    x_w = x_d + l_wrist2ee * np.cos(theta_d) * np.sin(q_base*D2R)   # wrist x
+    y_w = y_d - l_wrist2ee * np.cos(theta_d) * np.cos(q_base*D2R)   # wrist y
     z_w = z_d + l_wrist2ee * np.sin(theta_d)                    # wrist z
 
     r_w = np.sqrt(x_w**2 + y_w**2)                              # wrist radius
@@ -245,16 +245,16 @@ def IK_geometric(dh_params, pose):
 
         
         # Wrist pitch angles:
-        q_wrist_pitch = -clamp(theta_d - q_elbow - q_shoulder) * R2D        # wrist pitch motor
+        q_wrist_pitch = clamp(theta_d - q_elbow*D2R - q_shoulder*D2R) * R2D        # wrist pitch motor
         q_wrist_pitch = max(min(q_wrist_pitch, 127), -100)                       # geomatric limitation
 
         
         # Wrist roll angle:
-        q_wrist_roll = clamp(psi_d) * R2D                                  # wrist rotation angle, -180~180
+        q_wrist_roll = clamp(psi_d + q_base*D2R) * R2D                                  # wrist rotation angle, -180~180
         # q_wrist_roll = 0.0 * R2D
 
         sol = np.array([q_base, q_shoulder, q_elbow, q_wrist_pitch, q_wrist_roll])
         solutions.append(sol)
     
-    print(solutions)
-    return np.array(solutions)
+    # print(solutions)
+    return np.array(solutions[0]) * D2R
