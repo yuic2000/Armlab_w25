@@ -226,12 +226,16 @@ class Camera():
         # Dehomogenizing the mouse coordinates
         mouse_coords = np.linalg.inv(self.H) @ np.array([u, v, 1]).reshape(3, 1)
         # normalize mouse coordinates and get z on the pixel frame before homography
-        mouse_coords = mouse_coords / mouse_coords[2]       
-        z = self.DepthFrameRaw[int(mouse_coords[1])][int(mouse_coords[0])]
-        # Projecting the mouse coordingates into the camera frame
-        camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ mouse_coords
-        # Transforming the camera frame coordinates of the mouse into the world frame
-        world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
+        mouse_coords = mouse_coords / mouse_coords[2]
+        
+        if (mouse_coords[1] > 719 or mouse_coords[0] > 1279):
+            return 0
+        else:      
+            z = self.DepthFrameRaw[int(mouse_coords[1])][int(mouse_coords[0])]
+            # Projecting the mouse coordingates into the camera frame
+            camera_frame = z * np.linalg.inv(self.intrinsic_matrix) @ mouse_coords
+            # Transforming the camera frame coordinates of the mouse into the world frame
+            world_frame = np.linalg.inv(self.extrinsic_matrix) @ np.append(camera_frame, 1)
         return world_frame[:-1]
 
     def transform_depth(self):
@@ -448,9 +452,7 @@ class Camera():
         H = cv2.findHomography(image_points, desired_image_points)[0]
         self.H = H
         
-    def retrieve_clicked_pos(self):
-        z = self.DepthFrameWarped[self.last_click[1]][self.last_click[0]]
-        
+    def retrieve_clicked_pos(self):     
         world_frame = self.transformCoordinate_pixel2world(self.last_click[0], self.last_click[1])
         z_coord = self.linearizeZAxis(world_frame[1])
         return (world_frame[0], world_frame[1], world_frame[2] - z_coord)
