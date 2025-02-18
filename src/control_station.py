@@ -106,6 +106,12 @@ class Gui(QMainWindow):
         self.ui.btnUser8.clicked.connect(partial(nxt_if_arm_init, 'click_grab'))
         self.ui.btnUser9.setText('Place')
         self.ui.btnUser9.clicked.connect(partial(nxt_if_arm_init, 'click_place'))
+        self.ui.btnUser10.setText('Event1: Stack_n_Sort')
+        self.ui.btnUser10.clicked.connect(partial(nxt_if_arm_init, 'sort_n_stack'))
+        self.ui.btnUser11.setText('Event2: Line_em_up')
+        self.ui.btnUser11.clicked.connect(partial(nxt_if_arm_init, 'line_em_up'))
+        self.ui.btnUser12.setText('Event3: To_the_sky')
+        self.ui.btnUser12.clicked.connect(partial(nxt_if_arm_init, 'to_the_sky'))
 
         # Sliders
         for sldr in self.joint_sliders:

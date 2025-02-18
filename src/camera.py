@@ -85,6 +85,14 @@ class Camera():
             {'id': 'blue', 'color':   (0 , 50,  110)},  # 0, 50, 100
             {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
         ))
+        self.color_order = {        # ROYGBV
+            "red": 0,
+            "orange": 1,
+            "yellow": 2,
+            "green": 3,
+            "blue": 4,
+            "violet": 5
+        }
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         
         self.blocks_info_list = []
