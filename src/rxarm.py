@@ -183,6 +183,48 @@ class RXArm(InterbotixManipulatorXS):
         waypoint = IK_geometric(self.dh_params, pose)
         print(waypoint)
         self.set_positions(waypoint)
+    
+    def block_grab_planning(self, pose):
+        # Pre-grasp
+        desired_pose = pose.copy()
+        desired_pose[2] += 55       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
+
+        # Grasp
+        desired_pose = pose.copy()
+        desired_pose[2] += 15       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
+        self.rxarm.gripper.grasp()
+        time.sleep(2)
+
+        # Post-grasp
+        desired_pose = pose.copy()
+        desired_pose[2] += 100       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
+
+    def block_place_planning(self, pose, size):
+        # Pre-release
+        desired_pose = pose.copy()
+        desired_pose[2] += 90       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
+
+        # Release
+        desired_pose = pose.copy()
+        desired_pose[2] += 40       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
+        self.rxarm.gripper.release()
+        time.sleep(2)
+
+        # Post-release
+        desired_pose = pose.copy()
+        desired_pose[2] += 100       # z offset
+        self.rxarm.set_desired_joint_positions(desired_pose)
+        time.sleep(2)
 
     def get_ee_pose(self):
         """!
