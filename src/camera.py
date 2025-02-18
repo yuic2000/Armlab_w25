@@ -78,16 +78,17 @@ class Camera():
         self.block_contours = []
         self.block_detections = np.array([])
         self.block_colors = list((
-            {'id': 'red', 'color':    (127, 10,  10)},
-            {'id': 'orange', 'color': (150, 75,  30)},
-            {'id': 'yellow', 'color': (200, 150, 30)},
-            {'id': 'green', 'color':  (20, 60,  20)},
-            {'id': 'blue', 'color':   (0 , 50,  100)},
-            {'id': 'violet', 'color': (8 , 40,  100)}
+            {'id': 'red', 'color':    (100, 10,  10)},  # 125, 10, 10
+            {'id': 'orange', 'color': (175, 75,  30)},  # 150, 75, 30
+            {'id': 'yellow', 'color': (200, 150, 30)},  # 200, 150, 30
+            {'id': 'green', 'color':  (20, 50,  40)},   # 20, 60, 20
+            {'id': 'blue', 'color':   (0 , 50,  110)},  # 0, 50, 100
+            {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
         ))
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-
         
+        self.blocks_info_list = []
+
         # Intrinsic matrix as calibrated using the checkerboard in Checkpoint 1, Task 4
         self.intrinsic_matrix = np.array([[898.1038628, 0, 644.0920518], 
                                       [0, 900.632657, 340.2840602], 
@@ -295,14 +296,33 @@ class Camera():
         cv2.rectangle(cnt_im, (540, 365), (740, 680), (255, 0, 0), 2)
         cv2.drawContours(cnt_im, self.block_contours, -1, (0,255,255), 3)
         
+        
         for contour in self.block_contours:
+            block_info = {}
             color = self.retrieve_area_color(rgb_im, contour, self.block_colors)
             theta = cv2.minAreaRect(contour)[2]
             M = cv2.moments(contour)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
+            
+            area = cv2.contourArea(contour)
+            if area > 1000:
+                size = 'large'
+            else:
+                size = 'small'
+            
+            block_info['location'] = (cx, cy)
+            block_info['orientation'] = theta
+            block_info['color'] = color
+            block_info['size'] = size
+            if area > 150:      # filter noise
+                self.blocks_info_list.append(block_info)
+            
             cv2.putText(cnt_im, color, (cx-30, cy+40), self.font, 1.0, (0,0,0), thickness=2)
             cv2.putText(cnt_im, str(int(theta)), (cx, cy), self.font, 0.5, (255,255,255), thickness=2)
+            cv2.putText(cnt_im, size, (cx+30, cy+40), self.font, 0.5, (255,255,255), thickness=2)
+            # cv2.putText(cnt_im, str(int(area)), (cx+30, cy+40), self.font, 0.5, (255,255,255), thickness=2)
+
             # print(color, int(theta), cx, cy)
             
         mod_frame = cnt_im
@@ -452,8 +472,8 @@ class Camera():
         H = cv2.findHomography(image_points, desired_image_points)[0]
         self.H = H
         
-    def retrieve_clicked_pos(self):     
-        world_frame = self.transformCoordinate_pixel2world(self.last_click[0], self.last_click[1])
+    def retrieve_clicked_pos(self, x, y):     
+        world_frame = self.transformCoordinate_pixel2world(x, y)
         z_coord = self.linearizeZAxis(world_frame[1])
         return (world_frame[0], world_frame[1], world_frame[2] - z_coord)
     
