@@ -389,26 +389,26 @@ class StateMachine():
             cx, cy = block_info['location']
             if np.abs(self.camera.last_click[0] - cx) < 20 and np.abs(self.camera.last_click[1] - cy) < 20:
                 psi = block_info['orientation']
-                x, y, _ = self.camera.retrieve_clicked_pos(cx, cy)
+                x, y, z = self.camera.retrieve_clicked_pos(cx, cy)
                 self.current_block = block_info
-                print(psi)
+                # print(psi)
                 break
                 
         
         # Pre-grasp
-        pose = np.array((x, y, z+55, phi, theta, psi))
+        pose = np.array((x , y-10, z+55, phi, theta, psi))
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
         
         # Grasp
-        pose = np.array((x, y, z+15, phi, theta, psi))
+        pose = np.array((x, y-10, z+15, phi, theta, psi))
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
         self.rxarm.gripper.grasp()
         time.sleep(2)
         
         # Post-grasp
-        pose = np.array((x, y, z+65, phi, theta, psi))
+        pose = np.array((x, y-10, z+90, phi, theta, psi))
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
         
@@ -424,15 +424,15 @@ class StateMachine():
         phi, theta, psi = 0.0, np.pi, 0.0 
         
         # Pre-release
-        pose = np.array((x, y, z + 90, phi, theta, psi))
+        pose = np.array((x, y-10, z + 90, phi, theta, psi))
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
         
         # Release
         if self.current_block['size'] == 'large':
-            pose = np.array((x, y, z + 45, phi, theta, psi))
+            pose = np.array((x, y-10, z + 45, phi, theta, psi))
         else:
-            pose = np.array((x, y, z + 35, phi, theta, psi))
+            pose = np.array((x, y-10, z + 35, phi, theta, psi))
         
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
@@ -440,7 +440,7 @@ class StateMachine():
         time.sleep(2)
         
         # Post-release
-        pose = np.array((x, y, z+90, phi, theta, psi))
+        pose = np.array((x, y-10, z+90, phi, theta, psi))
         self.rxarm.set_desired_joint_positions(pose)
         time.sleep(3)
         
@@ -455,27 +455,33 @@ class StateMachine():
         print(len(self.camera.blocks_info_list))
 
         # Find blocks needed to sort within x: -150~150, y > 0
-        candidtated_blocks = []
+        candidated_blocks = []
         for block in self.camera.blocks_info_list:
             cx, cy = block['location']
             block_x, block_y, block_z = self.camera.retrieve_clicked_pos(cx, cy)
             block['color_order'] = self.camera.color_order.get(block['color'])
             if abs(block_x) < 150 and abs(block_y) > 0:
                 # print(block_x,  block_y)
-                candidtated_blocks.append(block)
+                candidated_blocks.append(block)
         
-        # print(len(candidtated_blocks))
+        print(len(candidated_blocks))
 
         # initialize large and small placing points
-        x_large, y_large = 350, 175
-        x_small, y_small = -350, 175
-        idx_large, idx_small = 0, 0
+        x_large, y_large, z_large = 250, -25, 10
+        x_small, y_small, z_small = -250, -25, 7
         # Sort the blocks
-        for block in candidtated_blocks:
+        for block in candidated_blocks:
             # Move to the block
-            x, y, z = self.camera.retrieve_clicked_pos(block['location'][0], block['location'][1])
+            x, y, _ = self.camera.retrieve_clicked_pos(block['location'][0], block['location'][1])
             phi, theta = 0.0, np.pi
             psi = block['orientation']
+            if psi > np.pi/4:
+                psi = np.pi/2 - psi
+                
+            if block['size'] == 'large':
+                z = 20
+            else:
+                z = 10
 
             # Grasping planning algorithm
             pose = np.array((x, y, z, phi, theta, psi))
@@ -483,32 +489,20 @@ class StateMachine():
             
             # Placing planning algorithm
             if block['size'] == 'large':                                # store large blocks in right side
-                x, y = x_large, y_large
-                z = 5
+                x, y, z = x_large, y_large, z_large
                 phi, theta, psi = 0.0, np.pi, 0.0
-
+                # print(z)
                 pose = np.array((x, y, z, phi, theta, psi))
                 self.rxarm.block_place_planning(pose)
-                y_large -= 75
-                if idx_large == 2:
-                    y_large = 175
-                    x_large = 250
-                
-                idx_large += 1
+                z_large += 40
                 
             else:                                                       # store small blocks in left side
-                x, y = x_small, y_small
-                z = 5
+                x, y, z = x_small, y_small, z_small
                 phi, theta, psi = 0.0, np.pi, 0.0
-
+                # print(z)
                 pose = np.array((x, y, z, phi, theta, psi))
                 self.rxarm.block_place_planning(pose)
-                y_small -= 75
-                if idx_small == 2:
-                    y_small = 175
-                    x_small = -250
-                
-                idx_small += 1
+                z_small += 20
         
         # back to initial position
         self.rxarm.initialize()
@@ -519,26 +513,37 @@ class StateMachine():
         self.status_message = 'Lining blocks for event 2'
 
         # Sort the blocks by color
-        self.camera.blocks_info.sort(key=lambda x: self.camera.color_order.get(x['color']))
+        self.camera.blocks_info_list.sort(key=lambda x: self.camera.color_order.get(x['color']))
+        print(len(self.camera.blocks_info_list))
 
-        # Find blocks needed to line up within y < 125
-        candidtated_blocks = []
-        for block in self.camera.blocks_info:
+        # Find blocks needed to sort within x: -150~150, y > 0
+        candidated_blocks = []
+        for block in self.camera.blocks_info_list:
             cx, cy = block['location']
             block_x, block_y, block_z = self.camera.retrieve_clicked_pos(cx, cy)
-            block['color_order'] = self.color_order.get(block['color'])
-            if abs(block_y) < 125:
-                candidtated_blocks.append(block)
+            block['color_order'] = self.camera.color_order.get(block['color'])
+            if abs(block_x) < 200 and abs(block_y) > 0:
+                # print(block_x,  block_y)
+                candidated_blocks.append(block)
+        
+        print(len(candidated_blocks))
 
         # initiate large and small lining position
-        x_large, y_large = -200, 325
-        x_small, y_small = -200, 225
+        x_large, y_large = 300, -75
+        x_small, y_small = -300, -75
         # Line up the blocks
-        for block in candidtated_blocks:
+        for block in candidated_blocks:
             # Move to the block
-            x, y, z = self.camera.retrieve_clicked_pos(block['location'][0], block['location'][1])
+            x, y, _ = self.camera.retrieve_clicked_pos(block['location'][0], block['location'][1])
             phi, theta = 0.0, np.pi
             psi = block['orientation']
+            if psi > np.pi/4:
+                psi = np.pi/2 - psi
+                
+            if block['size'] == 'large':
+                z = 20
+            else:
+                z = 10
 
             # Grasping planning algorithm
             pose = np.array((x, y, z, phi, theta, psi))
@@ -547,20 +552,20 @@ class StateMachine():
             # Placing planning algorithm
             if block['size'] == 'large':     # store large blocks in y = 325
                 x, y = x_large, y_large
-                z = 5
+                z = 10
                 phi, theta, psi = 0.0, np.pi, 0.0
 
                 pose = np.array((x, y, z, phi, theta, psi))
                 self.rxarm.block_place_planning(pose)
-                x_large += 100
+                y_large += 60                # maximum 6 blocks line length < 300mm
             else:                            # store small blocks in y = 225
                 x, y = x_small, y_small
-                z = 5
+                z = 7
                 phi, theta, psi = 0.0, np.pi, 0.0
 
                 pose = np.array((x, y, z, phi, theta, psi))
                 self.rxarm.block_place_planning(pose)
-                x_small += 100
+                y_small += 60
 
         # back to initial position
         self.rxarm.initialize()
@@ -571,17 +576,17 @@ class StateMachine():
         self.status_message = 'Stacking blocks for event 3'
 
         # Find blocks needed to stack up within (y < 125)
-        candidtated_blocks = []
-        for block in self.camera.blocks_info:
+        candidated_blocks = []
+        for block in self.camera.blocks_info_list:
             cx, cy = block['location']
             block_x, block_y, block_z = self.camera.retrieve_clicked_pos(cx, cy)
             block['color_order'] = self.color_order.get(block['color'])
             if abs(block_y) < 125:
-                candidtated_blocks.append(block)
+                candidated_blocks.append(block)
 
         x_pixel, y_pixel = 640, 335     # (175, 0) in world frame
         # Stack up the blocks
-        for block in candidtated_blocks:
+        for block in candidated_blocks:
             # Move to the block
             x, y, z = self.camera.retrieve_clicked_pos(block['location'][0], block['location'][1])
             phi, theta = 0.0, np.pi

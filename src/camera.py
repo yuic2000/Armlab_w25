@@ -78,18 +78,18 @@ class Camera():
         self.block_contours = []
         self.block_detections = np.array([])
         self.block_colors = list((
-            {'id': 'red', 'color':    (127, 10,  10)},  # 127, 10, 10
-            {'id': 'orange', 'color': (150, 75,  30)},  # 150, 75, 30
-            {'id': 'yellow', 'color': (200, 150, 30)},  # 200, 150, 30
-            {'id': 'green', 'color':  (20, 60,  20)},   # 20, 60, 20
-            {'id': 'blue', 'color':   (0 , 50,  100)},  # 0, 50, 100
-            {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
-            # {'id': 'red', 'color':    (100, 10,  10)},  # 127, 10, 10
-            # {'id': 'orange', 'color': (175, 75,  30)},  # 150, 75, 30
+            # {'id': 'red', 'color':    (127, 10,  10)},  # 127, 10, 10
+            # {'id': 'orange', 'color': (150, 75,  30)},  # 150, 75, 30
             # {'id': 'yellow', 'color': (200, 150, 30)},  # 200, 150, 30
-            # {'id': 'green', 'color':  (20, 50,  40)},   # 20, 60, 20
-            # {'id': 'blue', 'color':   (0 , 50,  110)},  # 0, 50, 100
+            # {'id': 'green', 'color':  (20, 60,  20)},   # 20, 60, 20
+            # {'id': 'blue', 'color':   (0 , 50,  100)},  # 0, 50, 100
             # {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
+            {'id': 'red', 'color':    (181, 16,  33)},  # 127, 10, 10
+            {'id': 'orange', 'color': (213, 75,  23)},  # 150, 75, 30
+            {'id': 'yellow', 'color': (213, 215, 25)},  # 200, 150, 30
+            {'id': 'green', 'color':  (89, 180,  65)},   # 20, 60, 20
+            {'id': 'blue', 'color':   (20 , 53,  200)},  # 0, 50, 100
+            {'id': 'violet', 'color': (50 , 14,  186)}   # 8, 40, 100
         ))
         self.color_order = {        # ROYGBV
             "red": 0,
@@ -326,7 +326,7 @@ class Camera():
                 size = 'small'
             
             block_info['location'] = (cx, cy)
-            block_info['orientation'] = theta
+            block_info['orientation'] = theta * np.pi/180
             block_info['color'] = color
             block_info['size'] = size
             if area > 150:      # filter noise
