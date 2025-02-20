@@ -67,6 +67,28 @@ class StateMachine():
         #     [-0.01227185,  0.01073787,  0.05675729,  0.00920388,  0.        ,  0.        ]]
         self.taught_waypts = []
         self.current_block = None
+        
+        self.bball_taught_waypts = [
+            [-0.04908739,   -0.30372819,    0.3850292 ,    -0.12578642,   0.01227185,     0.,    2.0,     0.5        ],
+            [ 0.        ,    0.34667966,    1.02930117,    -0.9219225 ,   3.07409763,     0.,    2.0,     0.5        ],
+            [ 0.        ,    0.34667966,    1.02930117,    -0.9219225 ,   3.07409763,     1.,    2.0,     0.5        ],
+            [-1.14434969,   -0.64580595,    0.41110685,     0.18254372,  -0.0076699,      0.,    2.0,     0.5        ],
+            [-1.60454392,    0.59365058,    0.74704868,    -1.47568953,   0.01840777,     0.,    2.0,     0.5        ],
+            [-1.60454392,    0.59365058,    0.74704868,    -1.47568953,   0.01840777,    -1.,    2.0,     0.5        ],
+            [-1.93434978,    0.81607783,    0.44945639,    -1.73033035,   0.10124274,     0.,    2.0,     0.5        ],
+            [-1.91594207,    0.57984477,    0.34821364,    -0.80840790,  -0.02914564,     0.,    2.0,     0.5        ],
+            [-1.94968963,   -0.09817477,    0.86823314,    -1.82236922,   0.05982525,     0.,    2.0,     0.5        ],
+            [-1.92821395,   -1.46188378,    1.58306825,    -1.64289343,   0.11351458,     0.,    2.0,     0.5        ] 
+            # [-0.01227185,   -0.25157285,    0.84982538,    -0.50314569,   3.12778687,     0.,    2.0,     0.5        ],
+            # [-0.01073787,    0.15339808,    0.88664091,    -0.32980588,   3.1247189 ,     0.,    2.0,     0.5        ],
+            # [-0.01073787,    0.15339808,    0.88664091,    -0.32980588,   3.1247189 ,     1.,    2.0,     0.5        ],
+            # [ 0.98174775,   -0.40803891,    0.64887387,    -0.2086214 ,   0.05368933,     0.,    2.0,     0.5        ],
+            # [ 0.98174775,   -0.40803891,    0.64887387,    -0.2086214 ,   0.05368933,    -1.,    2.0,     0.5        ],
+            # [ 0.98328173,   -0.15646605,    0.81147587,    -0.65500981,   0.0398835 ,     0.,    2.0,     0.5        ],
+            # [ 1.02776718,   -0.3129321 ,    0.02454369,     0.64427197,   0.0966408 ,     0.,    0.3,     0.1        ],
+            # [ 0.05675729,   -0.54916513,    0.6703496 ,    -0.18714567,   0.02300971,     0.,    2.0,     0.5        ],
+            # [-0.00920388,   -1.78095174,    1.7165246 ,     0.64733994,   0.05982525,     0.,    2.0,     0.5        ]
+        ]
 
     def set_next_state(self, state):
         """!
@@ -162,7 +184,9 @@ class StateMachine():
         
         if self.next_state == 'to_the_sky':
             self.to_the_sky()
-            
+        
+        if self.next_state == 'Bball_repeat_position':
+            self.Bball_repeat_position()
 
     """Functions run for each state"""
 
@@ -302,6 +326,38 @@ class StateMachine():
                 time.sleep(2)
 
         self.next_state = "idle"
+        
+    def Bball_repeat_position(self):
+
+        self.current_state = "Bball_repeat_position"
+        self.status_message = "Ball Repeating"
+        self.bball_taught_waypts = np.asarray(self.bball_taught_waypts)
+        
+        for bball_taught_waypt in self.bball_taught_waypts:
+            print("basketball launch sequence")
+            joint_angle = bball_taught_waypt[0:5]
+            print(joint_angle)
+            gripper_cmd = bball_taught_waypt[5]
+            m_time = bball_taught_waypt[6]
+            a_time = bball_taught_waypt[7]
+            
+            self.rxarm.set_moving_time(m_time)
+            self.rxarm.set_accel_time(a_time)
+            
+            self.rxarm.set_positions(joint_angle)
+            
+            time.sleep(3)
+
+            # Here, we change the gripper status if necessary
+            if (gripper_cmd == 1):
+                self.rxarm.gripper.grasp()
+                time.sleep(1)
+            elif (gripper_cmd == -1):
+                self.rxarm.gripper.release()
+                time.sleep(1)
+
+        self.next_state = "idle"
+
 
     def record_gripper_open(self):
         self.current_state = "record_gripper_open"
@@ -395,16 +451,20 @@ class StateMachine():
         self.status_message = 'Sorting and stacking blocks for event 1'
 
         # Sort the blocks by color
-        self.camera.blocks_info.sort(key=lambda x: self.camera.color_order.get(x['color']))
+        self.camera.blocks_info_list.sort(key=lambda x: self.camera.color_order.get(x['color']))
+        print(len(self.camera.blocks_info_list))
 
         # Find blocks needed to sort within x: -150~150, y > 0
         candidtated_blocks = []
-        for block in self.camera.blocks_info:
+        for block in self.camera.blocks_info_list:
             cx, cy = block['location']
             block_x, block_y, block_z = self.camera.retrieve_clicked_pos(cx, cy)
-            block['color_order'] = self.color_order.get(block['color'])
+            block['color_order'] = self.camera.color_order.get(block['color'])
             if abs(block_x) < 150 and abs(block_y) > 0:
+                # print(block_x,  block_y)
                 candidtated_blocks.append(block)
+        
+        # print(len(candidtated_blocks))
 
         # initialize large and small placing points
         x_large, y_large = 350, 175
@@ -570,3 +630,139 @@ class StateMachineThread(QThread):
             self.sm.run()
             self.updateStatusMessage.emit(self.sm.status_message)
             time.sleep(0.05)
+            
+            
+"""
+[-0.04908739 -0.30372819  0.3850292  -0.12578642 -0.01227185  0., 2.0    , 0.5        ]
+[ 0.          0.34667966  1.02930117 -0.9219225   3.07409763  0., 2.0    , 0.5        ]
+[ 0.          0.34667966  1.02930117 -0.9219225   3.07409763  1., 2.0    , 0.5        ]
+[-1.60454392  0.59365058  0.74704868 -1.47568953  0.01840777  0., 2.0    , 0.5        ]
+[-1.60454392  0.59365058  0.74704868 -1.47568953  0.01840777 -1., 2.0    , 0.5        ]
+[-1.93434978  0.81607783  0.44945639 -1.73033035  0.10124274  0., 2.0    , 0.5        ]
+[-1.92974794 -0.02454369  0.81914574 -1.81009734  0.05982525  0., 1.0    , 0.3        ]
+[-0.01227185 -0.25157285  0.84982538 -0.50314569 -3.12778687  0., 2.0    , 0.5        ]
+[-0.01073787  0.15339808  0.88664091 -0.32980588 -3.1247189   0., 2.0    , 0.5        ]
+[-0.01073787  0.15339808  0.88664091 -0.32980588 -3.1247189   1., 2.0    , 0.5        ]
+[ 0.98174775 -0.40803891  0.64887387 -0.2086214  -0.05368933  0., 2.0    , 0.5        ]
+[ 0.98174775 -0.40803891  0.64887387 -0.2086214  -0.05368933 -1., 2.0    , 0.5        ]
+[ 0.98328173 -0.15646605  0.81147587 -0.65500981 -0.0398835   0., 2.0    , 0.5        ]
+[ 1.02776718 -0.3129321   0.02454369  0.64427197 -0.0966408   0., 1.0    , 0.3        ]
+[ 0.05675729 -0.54916513  0.6703496  -0.18714567 -0.02300971  0., 2.0    , 0.5        ]
+[-0.00920388 -1.78095174  1.7165246   0.64733994 -0.05982525  0., 2.0    , 0.5        ]
+
+"""
+
+"""
+Tower Stacking v1
+Last position taught is [-0.01994175 -0.24543694  0.29145637  0.17947575  0.16413595  0.        ]
+Last position taught is [ 1.55852449  0.5276894  -0.56757289  1.61067986 -0.03067962  0.        ]
+Last position taught is [ 1.56926239  0.57984477 -0.30833015  1.31922352 -0.03067962  0.        ]
+Recorded gripper closed, waypoints now [ 1.56926239  0.57984477 -0.30833015  1.31922352 -0.03067962  1.        ]
+Last position taught is [ 1.56926239  0.23930101 -0.32366997  1.44194198 -0.0322136   0.        ]
+Last position taught is [-0.0322136  -0.4954758   0.41417482  1.60300994 -0.02761165  0.        ]
+Last position taught is [ 0.00613592 -0.23469907  0.80533993  1.03850508  0.00613592  0.        ]
+Recorded gripper open, waypoints now [ 0.00613592 -0.23469907  0.80533993  1.03850508  0.00613592 -1.        ]
+Last position taught is [ 0.0076699  -0.65347582  0.29759228  1.53551483  0.01380583  0.        ]
+Last position taught is [ 1.5569905   0.47246608 -0.32520393  1.4005245  -0.03681554  0.        ]
+Last position taught is [ 1.56312644  0.58751464 -0.32520393  1.33456337 -0.0398835   0.        ]
+Recorded gripper closed, waypoints now [ 1.56312644  0.58751464 -0.32520393  1.33456337 -0.0398835   1.        ]
+Last position taught is [ 1.5569905   0.34361172 -0.38042724  1.53551483 -0.03681554  0.        ]
+Last position taught is [ 0.02147573 -0.45866027  0.54763114  1.49869931  0.00920388  0.        ]
+Last position taught is [ 0.01227185 -0.31446606  0.6703496   1.28547597  0.0076699   0.        ]
+Recorded gripper open, waypoints now [ 0.01227185 -0.31446606  0.6703496   1.28547597  0.0076699  -1.        ]
+Last position taught is [ 0.01073787 -0.69182533  0.59978652  1.37751484  0.01073787  0.        ]
+Last position taught is [ 1.54318476  0.47860202 -0.40497094  1.5079031  -0.06135923  0.        ]
+Last position taught is [ 1.55238855  0.55530107 -0.2638447   1.28394198 -0.06289321  0.        ]
+Recorded gripper closed, waypoints now [ 1.55238855  0.55530107 -0.2638447   1.28394198 -0.06289321  1.        ]
+Last position taught is [ 1.55545652  0.38656318 -0.36508745  1.55545652 -0.05829127  0.        ]
+Last position taught is [ 0.01687379 -0.39269909  0.19021362  1.81163132  0.01687379  0.        ]
+Last position taught is [ 0.02607767 -0.40497094  0.59518456  1.39745653  0.01687379  0.        ]
+Recorded gripper open, waypoints now [ 0.02607767 -0.40497094  0.59518456  1.39745653  0.01687379 -1.        ]
+Last position taught is [-0.00920388 -0.86669916  0.53382534  1.37291288  0.01533981  0.        ]
+Last position taught is [ 1.55085456  0.50928164 -0.59365058  1.70118475 -0.01533981  0.        ]
+Last position taught is [ 1.56619442  0.53535932 -0.25310683  1.27473807 -0.0076699   0.        ]
+Recorded gripper closed, waypoints now [ 1.56619442  0.53535932 -0.25310683  1.27473807 -0.0076699   1.        ]
+Last position taught is [ 1.56619442e+00  1.64135948e-01 -2.53106833e-01  1.46188378e+00 1.53398083e-03  0.00000000e+00]
+Last position taught is [-1.53398083e-03 -3.83495212e-01  2.60776747e-02  1.91134012e+00 -1.68737900e-02  0.00000000e+00]
+Last position taught is [ 1.53398083e-03 -3.81961226e-01  3.72757345e-01  1.65669930e+00 -2.30097119e-02  0.00000000e+00]
+Recorded gripper open, waypoints now [ 1.53398083e-03 -3.81961226e-01  3.72757345e-01  1.65669930e+00 -2.30097119e-02 -1.00000000e+00]
+Last position taught is [ 0.01840777 -0.44792241  0.13192235  1.81009734  0.02761165  0.        ]
+Last position taught is [ 1.57386434 -0.07516506  0.36508745  1.27780604  0.03374758  0.        ]
+Last position taught is [1.56926239 0.04448544 0.52462143 0.96947587 0.0322136  0.        ]
+Recorded gripper closed, waypoints now [1.56926239 0.04448544 0.52462143 0.96947587 0.0322136  1.        ]
+Last position taught is [ 1.5677284  -0.30372819  0.43565056  1.28700995  0.03681554  0.        ]
+Last position taught is [ 1.58000028  0.45252433 -0.47860202  1.56926239  0.03374758  0.        ]
+Last position taught is [ 1.57079637  0.48013601 -0.30833015  1.41126239  0.03528156  0.        ]
+Recorded gripper open, waypoints now [ 1.57079637  0.48013601 -0.30833015  1.41126239  0.03528156 -1.        ]
+Last position taught is [ 1.55852449  0.30679616 -0.42951465  1.51403904  0.00613592  0.        ]
+Last position taught is [ 1.56312644 -0.00920388  0.37122336  1.20877695 -0.01227185  0.        ]
+Last position taught is [ 1.56005847  0.04141748  0.53996128  0.96333998 -0.01380583  0.        ]
+Recorded gripper closed, waypoints now [ 1.56005847  0.04141748  0.53996128  0.96333998 -0.01380583  1.        ]
+Last position taught is [ 1.55545652 -0.18561168  0.41110685  1.29774773 -0.00306796  0.        ]
+Last position taught is [ 1.54625273  0.36355346 -0.51695156  1.60761189 -0.06596117  0.        ]
+Last position taught is [ 1.5569905   0.46172822 -0.46786416  1.53244686 -0.06135923  0.        ]
+Recorded gripper open, waypoints now [ 1.5569905   0.46172822 -0.46786416  1.53244686 -0.06135923 -1.        ]
+Last position taught is [ 1.55392253  0.40497094 -0.65040785  1.73646629 -0.05215535  0.        ]
+Last position taught is [ 1.50176728 -1.29467988  0.92345643  0.40803891  0.03528156  0.        ]
+Last position taught is [ 1.57233036  0.52615541  1.18883514 -1.59994197  0.05368933  0.        ]
+Last position taught is [ 1.57233036  0.55530107  0.92345643 -1.38365066  0.05215535  0.        ]
+Recorded gripper closed, waypoints now [ 1.57233036  0.55530107  0.92345643 -1.38365066  0.05215535  1.        ]
+Last position taught is [ 1.57233036 -0.320602    0.98021376 -0.84368944  0.03681554  0.        ]
+Last position taught is [ 0.00613592 -1.35757303  1.11980605  0.3528156  -0.08897088  0.        ]
+Last position taught is [ 0.0398835  -1.45114589  1.39285457  0.11504856 -0.0076699   0.        ]
+Recorded gripper open, waypoints now [ 0.0398835  -1.45114589  1.39285457  0.11504856 -0.0076699  -1.        ]
+Last position taught is [ 0.04295146 -1.10906816  0.62126225  0.51388359  0.03528156  0.        ]
+Last position taught is [ 1.47722352 -1.1826992   0.51234961  0.73784477  0.0644272   0.        ]
+Last position taught is [ 1.55545652 -0.01994175  0.33747578  1.27627206 -0.02147573  0.        ]
+Last position taught is [ 1.55545652  0.10584468  0.46633017  1.00015545 -0.02300971  0.        ]
+Recorded gripper closed, waypoints now [ 1.55545652  0.10584468  0.46633017  1.00015545 -0.02300971  1.        ]
+Last position taught is [ 1.55545652 -0.2561748   0.51388359  1.10600019 -0.00920388  0.        ]
+Last position taught is [ 1.55238855  0.40803891 -0.39269909  1.49716532 -0.07669904  0.        ]
+Last position taught is [ 1.55545652  0.49087387 -0.35128161  1.4204663  -0.07363108  0.        ]
+Recorded gripper open, waypoints now [ 1.55545652  0.49087387 -0.35128161  1.4204663  -0.07363108 -1.        ]
+Last position taught is [ 1.5569905   0.24543694 -0.34667966  1.4680196  -0.07823303  0.        ]
+Last position taught is [ 1.55545652 -0.07669904  0.45712629  1.14281571 -0.07669904  0.        ]
+Last position taught is [ 1.55545652  0.05829127  0.50467968  0.961806   -0.07516506  0.        ]
+Recorded gripper closed, waypoints now [ 1.55545652  0.05829127  0.50467968  0.961806   -0.07516506  1.        ]
+Last position taught is [ 1.55238855 -0.1672039   0.43411657  1.21337879 -0.08283497  0.        ]
+Last position taught is [ 1.53398085  0.40497094 -0.60745639  1.68737888 -0.08590293  0.        ]
+Last position taught is [ 1.55545652  0.46633017 -0.46786416  1.5385828  -0.08283497  0.        ]
+Recorded gripper open, waypoints now [ 1.55545652  0.46633017 -0.46786416  1.5385828  -0.08283497 -1.        ]
+Last position taught is [ 1.55852449  0.16566993 -0.41877678  1.56005847 -0.079767    0.        ]
+Last position taught is [ 1.5677284  -0.82528168  1.52784491 -0.64733994 -0.02761165  0.        ]
+Last position taught is [ 1.57079637  0.6304661   0.93112636 -1.51710701 -0.02914564  0.        ]
+Recorded gripper closed, waypoints now [ 1.57079637  0.6304661   0.93112636 -1.51710701 -0.02914564  1.        ]
+Last position taught is [ 1.57079637 -0.0076699   1.09679627 -1.13207781 -0.03067962  0.        ]
+Last position taught is [ 1.56926239 -0.69335932  0.62433022  0.05675729 -0.01994175  0.        ]
+Last position taught is [ 0.0322136  -1.21337879  0.68262148  0.52615541  0.0398835   0.        ]
+Last position taught is [ 0.02914564 -1.27013612  0.80687392  0.50467968  0.04141748  0.        ]
+Recorded gripper open, waypoints now [ 0.02914564 -1.27013612  0.80687392  0.50467968  0.04141748 -1.        ]
+Last position taught is [ 0.0076699  -0.75165063 -0.15033013  0.9510681  -0.00920388  0.        ]
+Last position taught is [ 1.50023329 -0.719437   -0.2316311   0.88357294 -0.01227185  0.        ]
+Last position taught is [1.56926239 0.01840777 0.34667966 1.25019443 0.0398835  0.        ]
+Last position taught is [1.5677284  0.12578642 0.41417482 1.05077684 0.04295146 0.        ]
+Recorded gripper closed, waypoints now [1.5677284  0.12578642 0.41417482 1.05077684 0.04295146 1.        ]
+Last position taught is [ 1.55085456 -0.13652429  0.398835    1.23945653  0.04141748  0.        ]
+Last position taught is [ 1.55085456  0.44485444 -0.46172822  1.55238855 -0.03681554  0.        ]
+Last position taught is [ 1.55852449  0.52462143 -0.40343696  1.48029149 -0.02761165  0.        ]
+Recorded gripper open, waypoints now [ 1.55852449  0.52462143 -0.40343696  1.48029149 -0.02761165 -1.        ]
+Last position taught is [ 1.5677284   0.37889326 -0.56297094  1.69965076 -0.03067962  0.        ]
+Last position taught is [ 1.56005847 -0.0322136   0.398835    1.20877695 -0.02454369  0.        ]
+Last position taught is [ 1.56005847  0.07669904  0.48166999  0.98328173 -0.02607767  0.        ]
+Recorded gripper closed, waypoints now [ 1.56005847  0.07669904  0.48166999  0.98328173 -0.02607767  1.        ]
+Last position taught is [ 1.5569905   0.33594179 -0.54916513  1.66130126 -0.03681554  0.        ]
+Last position taught is [ 1.56159246  0.42337871 -0.37889326  1.45267987 -0.03528156  0.        ]
+Recorded gripper open, waypoints now [ 1.56159246  0.42337871 -0.37889326  1.45267987 -0.03528156 -1.        ]
+Last position taught is [ 1.56159246 -0.12271847 -0.02454369  1.59227204 -0.02300971  0.        ]
+Last position taught is [ 1.5569905   0.63353407  1.12747586 -1.72879636  0.04448544  0.        ]
+Last position taught is [ 1.57079637  0.6657477   0.90965062 -1.52784491  0.04295146  0.        ]
+Recorded gripper closed, waypoints now [ 1.57079637  0.6657477   0.90965062 -1.52784491  0.04295146  1.        ]
+Last position taught is [ 1.5784663  -0.16873789  1.01702929 -0.88357294  0.04141748  0.        ]
+Last position taught is [ 1.54625273 -0.54916513  0.03374758  0.46479619  0.04141748  0.        ]
+Last position taught is [-0.01227185 -0.78693217 -0.05368933  0.87743706  0.04448544  0.        ]
+Last position taught is [ 0.02761165 -0.95567006  0.1840777   0.73631078  0.04601942  0.        ]
+Recorded gripper open, waypoints now [ 0.02761165 -0.95567006  0.1840777   0.73631078  0.04601942 -1.        ]
+Last position taught is [ 0.04908739 -0.10891264 -1.48029149  1.56619442  0.02761165  0.        ]
+Last position taught is [ 1.43427205 -0.19481556 -1.45728183  1.56312644  0.01840777  0.        ]
+
+"""
