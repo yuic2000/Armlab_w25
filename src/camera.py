@@ -485,6 +485,8 @@ class Camera():
         # Finding and updating homography transform matrix
         H = cv2.findHomography(image_points, desired_image_points)[0]
         self.H = H
+        print(self.extrinsic_matrix)
+        print(self.H)
         
     def retrieve_clicked_pos(self, x, y):     
         world_frame = self.transformCoordinate_pixel2world(x, y)

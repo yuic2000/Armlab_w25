@@ -228,7 +228,7 @@ class RXArm(InterbotixManipulatorXS):
         # Post-release
         desired_pose = pose.copy()
         desired_pose[1] -= 10
-        desired_pose[2] += 100       # z offset
+        desired_pose[2] += 120       # z offset
         self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
 
