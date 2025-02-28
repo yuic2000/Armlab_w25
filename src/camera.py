@@ -78,12 +78,18 @@ class Camera():
         self.block_contours = []
         self.block_detections = np.array([])
         self.block_colors = list((
-            {'id': 'red', 'color':    (100, 10,  10)},  # 125, 10, 10
-            {'id': 'orange', 'color': (175, 75,  30)},  # 150, 75, 30
-            {'id': 'yellow', 'color': (200, 150, 30)},  # 200, 150, 30
-            {'id': 'green', 'color':  (20, 50,  40)},   # 20, 60, 20
-            {'id': 'blue', 'color':   (0 , 50,  110)},  # 0, 50, 100
-            {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
+            # {'id': 'red', 'color':    (127, 10,  10)},  # 127, 10, 10
+            # {'id': 'orange', 'color': (150, 75,  30)},  # 150, 75, 30
+            # {'id': 'yellow', 'color': (200, 150, 30)},  # 200, 150, 30
+            # {'id': 'green', 'color':  (20, 60,  20)},   # 20, 60, 20
+            # {'id': 'blue', 'color':   (0 , 50,  100)},  # 0, 50, 100
+            # {'id': 'violet', 'color': (8 , 40,  100)}   # 8, 40, 100
+            {'id': 'red', 'color':    (181, 16,  33)},  # 127, 10, 10
+            {'id': 'orange', 'color': (213, 75,  23)},  # 150, 75, 30
+            {'id': 'yellow', 'color': (213, 215, 25)},  # 200, 150, 30
+            {'id': 'green', 'color':  (89, 180,  65)},   # 20, 60, 20
+            {'id': 'blue', 'color':   (20 , 53,  200)},  # 0, 50, 100
+            {'id': 'violet', 'color': (50 , 14,  186)}   # 8, 40, 100
         ))
         self.color_order = {        # ROYGBV
             "red": 0,
@@ -304,7 +310,7 @@ class Camera():
         cv2.rectangle(cnt_im, (540, 365), (740, 680), (255, 0, 0), 2)
         cv2.drawContours(cnt_im, self.block_contours, -1, (0,255,255), 3)
         
-        
+        self.blocks_info_list = []
         for contour in self.block_contours:
             block_info = {}
             color = self.retrieve_area_color(rgb_im, contour, self.block_colors)
@@ -320,7 +326,7 @@ class Camera():
                 size = 'small'
             
             block_info['location'] = (cx, cy)
-            block_info['orientation'] = theta
+            block_info['orientation'] = theta * np.pi/180
             block_info['color'] = color
             block_info['size'] = size
             if area > 150:      # filter noise
@@ -332,7 +338,7 @@ class Camera():
             # cv2.putText(cnt_im, str(int(area)), (cx+30, cy+40), self.font, 0.5, (255,255,255), thickness=2)
 
             # print(color, int(theta), cx, cy)
-            
+        # print(len(self.blocks_info_list))
         mod_frame = cnt_im
         return mod_frame
 
@@ -479,6 +485,8 @@ class Camera():
         # Finding and updating homography transform matrix
         H = cv2.findHomography(image_points, desired_image_points)[0]
         self.H = H
+        print(self.extrinsic_matrix)
+        print(self.H)
         
     def retrieve_clicked_pos(self, x, y):     
         world_frame = self.transformCoordinate_pixel2world(x, y)

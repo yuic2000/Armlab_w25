@@ -90,8 +90,8 @@ class Gui(QMainWindow):
         self.ui.btnUser1.clicked.connect(lambda: self.rxarm.gripper.release())
         self.ui.btnUser2.setText('Close Gripper')
         self.ui.btnUser2.clicked.connect(lambda: self.rxarm.gripper.grasp())
-        self.ui.btnUser3.setText('Execute')
-        self.ui.btnUser3.clicked.connect(partial(nxt_if_arm_init, 'execute'))
+        # self.ui.btnUser3.setText('Execute')
+        # self.ui.btnUser3.clicked.connect(partial(nxt_if_arm_init, 'execute'))
 
         # ArmLab Checkpoint 1, Task 1.3: Implementing buttons for the arm to learn and repeat trajectories
         self.ui.btnUser4.setText('Record')
@@ -112,7 +112,9 @@ class Gui(QMainWindow):
         self.ui.btnUser11.clicked.connect(partial(nxt_if_arm_init, 'line_em_up'))
         self.ui.btnUser12.setText('Event3: To_the_sky')
         self.ui.btnUser12.clicked.connect(partial(nxt_if_arm_init, 'to_the_sky'))
-
+        self.ui.btnUser3.setText('Event4: Bball_repeat')
+        self.ui.btnUser3.clicked.connect(partial(nxt_if_arm_init, 'Bball_repeat_position'))
+        
         # Sliders
         for sldr in self.joint_sliders:
             sldr.valueChanged.connect(self.sliderChange)

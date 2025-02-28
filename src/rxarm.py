@@ -187,43 +187,49 @@ class RXArm(InterbotixManipulatorXS):
     def block_grab_planning(self, pose):
         # Pre-grasp
         desired_pose = pose.copy()
-        desired_pose[2] += 55       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        desired_pose[1] -= 10
+        desired_pose[2] += 60       # z offset
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
 
         # Grasp
         desired_pose = pose.copy()
-        desired_pose[2] += 15       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        desired_pose[1] -= 10
+        desired_pose[2] += 25       # z offset
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
-        self.rxarm.gripper.grasp()
+        self.gripper.grasp()
         time.sleep(2)
 
         # Post-grasp
         desired_pose = pose.copy()
+        desired_pose[1] -= 10
         desired_pose[2] += 100       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
 
-    def block_place_planning(self, pose, size):
+    def block_place_planning(self, pose):
         # Pre-release
         desired_pose = pose.copy()
+        desired_pose[1] -= 10
         desired_pose[2] += 90       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
 
         # Release
         desired_pose = pose.copy()
-        desired_pose[2] += 40       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        desired_pose[1] -= 10
+        desired_pose[2] += 30       # z offset
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
-        self.rxarm.gripper.release()
+        self.gripper.release()
         time.sleep(2)
 
         # Post-release
         desired_pose = pose.copy()
-        desired_pose[2] += 100       # z offset
-        self.rxarm.set_desired_joint_positions(desired_pose)
+        desired_pose[1] -= 10
+        desired_pose[2] += 120       # z offset
+        self.set_desired_joint_positions(desired_pose)
         time.sleep(2)
 
     def get_ee_pose(self):
