@@ -1,4 +1,4 @@
-# armlab-f24
+# Armlab-w25
 
 **Table of content**
 - [Code structure](#code-structure)
